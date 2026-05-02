@@ -1,0 +1,83 @@
+import Link from "next/link";
+import {
+  AppointmentsIcon,
+  BillingIcon,
+  DashboardIcon,
+  DoctorsIcon,
+  InventoryIcon,
+  LogoMark,
+  PatientsIcon,
+  RecordsIcon,
+  ReportsIcon,
+  SettingsIcon,
+  SupportIcon,
+  SuppliersIcon,
+} from "./dashboard-icons";
+
+const navItems = [
+  { label: "Dashboard", icon: DashboardIcon, active: true },
+  { label: "Patients", icon: PatientsIcon },
+  { label: "Doctors", icon: DoctorsIcon },
+  { label: "Appointments", icon: AppointmentsIcon },
+  { label: "Medical Records", icon: RecordsIcon },
+  { label: "Inventory", icon: InventoryIcon },
+  { label: "Billing", icon: BillingIcon },
+  { label: "Suppliers", icon: SuppliersIcon },
+  { label: "Reports", icon: ReportsIcon },
+];
+
+export default function Sidebar() {
+  return (
+    <aside className="hidden md:flex w-[255px] shrink-0 h-screen sticky top-0 flex-col border-r border-slate-200/80 bg-white">
+      <div className="p-5 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-11 w-11 rounded-xl bg-[#4f74ff] flex items-center justify-center text-white shadow-[0_10px_18px_rgba(79,116,255,0.28)]">
+            <LogoMark className="h-7 w-7" />
+          </div>
+          <div>
+            <div className="text-[18px] font-semibold leading-tight text-slate-900">MediStock</div>
+            <div className="text-[13px] leading-tight text-slate-500">Health Management System</div>
+          </div>
+        </div>
+      </div>
+
+      <nav className="px-3 flex flex-col gap-1.5">
+        {navItems.map(({ label, icon: Icon, active }) => (
+          <Link
+            key={label}
+            href="#"
+            className={[
+              "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors",
+              active
+                ? "bg-[#eef2ff] text-[#2563eb] shadow-[inset_0_0_0_1px_rgba(37,99,235,0.08)]"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "flex h-5 w-5 items-center justify-center",
+                active ? "text-[#2563eb]" : "text-slate-500 group-hover:text-slate-700",
+              ].join(" ")}
+            >
+              <Icon className="h-4 w-4" />
+            </span>
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>
+
+      <div className="mt-auto border-t border-slate-200/80 p-4">
+        <div className="space-y-1">
+          <Link href="#" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+            <SettingsIcon className="h-4 w-4 text-slate-500" />
+            <span>Settings</span>
+          </Link>
+          <Link href="#" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+            <SupportIcon className="h-4 w-4 text-slate-500" />
+            <span>Support</span>
+          </Link>
+        </div>
+      </div>
+    </aside>
+  );
+}
