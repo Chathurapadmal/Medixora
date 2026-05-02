@@ -10,7 +10,7 @@ import {
   PatientsIcon,
   PlusIcon,
   WarningSmallIcon,
-} from "@/components/DashboardIcons";
+} from "@/components/dashboard-icons";
 import type { ComponentType } from "react";
 
 const stats = [

@@ -1,5 +1,5 @@
 import React from "react";
-import { BellIcon, HelpIcon, SearchIcon } from "./DashboardIcons";
+import { BellIcon, HelpIcon, SearchIcon } from "./dashboard-icons";
 
 export default function Topbar() {
   return (

@@ -165,17 +165,6 @@ export function HelpIcon(props: IconProps) {
   );
 }
 
-export function UsersIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M9 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z" />
-      <path d="M19 11a2.5 2.5 0 1 0-2.5-2.5A2.5 2.5 0 0 0 19 11Z" />
-      <path d="M3.5 19a5.5 5.5 0 0 1 11 0" />
-      <path d="M14.5 19a4.5 4.5 0 0 1 6 0" />
-    </Icon>
-  );
-}
-
 export function ClipboardCheckIcon(props: IconProps) {
   return (
     <Icon {...props}>

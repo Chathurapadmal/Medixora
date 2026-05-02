@@ -12,7 +12,7 @@ import {
   SettingsIcon,
   SupportIcon,
   SuppliersIcon,
-} from "./DashboardIcons";
+} from "./dashboard-icons";
 
 const navItems = [
   { label: "Dashboard", icon: DashboardIcon, active: true },
