@@ -149,7 +149,7 @@ export default function PatientsPage() {
                   </td>
 
                   <td className="px-5 py-4 text-right">
-  <div className="flex justify-end gap-2">
+  <div className="flex justify-end gap-0">
     
     <button className="h-8 w-8 rounded-lg hover:bg-slate-100 flex items-center justify-center">
       <EyeIcon className="h-4 w-4 text-slate-500" />
