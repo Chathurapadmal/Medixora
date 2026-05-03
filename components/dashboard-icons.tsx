@@ -353,3 +353,20 @@ export function PrintIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function MailIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 6h16v12H4z" />
+      <path d="M4 6l8 6 8-6" />
+    </Icon>
+  );
+}
+
+export function PhoneIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72c.12.9.32 1.77.59 2.6a2 2 0 0 1-.45 2.11L9 10a16 16 0 0 0 5 5l.57-.14a2 2 0 0 1 2.11.45c.83.27 1.7.47 2.6.59A2 2 0 0 1 22 16.92z" />
+    </Icon>
+  );
+}
