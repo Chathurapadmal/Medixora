@@ -1,11 +1,12 @@
 import { useState } from "react";
 import {
-  UsersIcon,
   ChevronRightIcon,
   UserPlusIcon,
   ContactIcon,
   AlertTriangleIcon,
   PrintIcon,
+  MailIcon,
+  PhoneIcon,
 } from "@/components/dashboard-icons";
 
 export default function PatientRegisterPage() {
@@ -29,10 +30,7 @@ export default function PatientRegisterPage() {
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-
-          {/* ✅ UPDATED BREADCRUMB */}
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            
+          <div className="flex items-center gap-1 text-sm text-slate-500">
             <span>Patients</span>
             <ChevronRightIcon className="h-4 w-4" />
             <span className="text-slate-700 font-medium">Add New Patient</span>
@@ -52,7 +50,6 @@ export default function PatientRegisterPage() {
             Cancel
           </button>
 
-          {/* ✅ ICON ADDED */}
           <button className="inline-flex items-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2 text-sm text-white hover:bg-[#1d4ed8]">
             <PrintIcon className="h-4 w-4" />
             Save Patient
@@ -61,15 +58,17 @@ export default function PatientRegisterPage() {
       </div>
 
       {/* PERSONAL INFO */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
-        {/* ✅ ICON ADDED */}
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        {/* Header */}
+        <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3 bg-[#f8faff]">
           <UserPlusIcon className="h-4 w-4 text-[#2563eb]" />
-          Personal Information
-        </h2>
+          <h2 className="text-sm font-semibold text-slate-700">
+            Personal Information
+          </h2>
+        </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="p-5 grid gap-4 md:grid-cols-2">
 
           <div className="md:col-span-2">
             <label className="text-sm text-slate-600">
@@ -78,7 +77,7 @@ export default function PatientRegisterPage() {
             <input
               type="text"
               placeholder="e.g. Jane Doe"
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500"
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -90,7 +89,7 @@ export default function PatientRegisterPage() {
               type="date"
               value={dob}
               onChange={(e) => setDob(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none"
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
@@ -129,55 +128,66 @@ export default function PatientRegisterPage() {
       </div>
 
       {/* CONTACT */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
-        {/* ✅ ICON ADDED */}
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3 bg-[#f8faff]">
           <ContactIcon className="h-4 w-4 text-[#2563eb]" />
-          Contact Details
-        </h2>
+          <h2 className="text-sm font-semibold text-slate-700">
+            Contact Details
+          </h2>
+        </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="p-5 grid gap-4 md:grid-cols-2">
+
+          {/* PHONE INPUT WITH ICON */}
           <div>
             <label className="text-sm text-slate-600">
               Contact Number <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              placeholder="+1 (555) 000-0000"
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
+            <div className="mt-1 flex items-center rounded-xl border border-slate-200 px-3 focus-within:ring-2 focus-within:ring-blue-100">
+              <PhoneIcon className="h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="+1 (555) 000-0000"
+                className="w-full px-2 py-2 text-sm outline-none bg-transparent"
+              />
+            </div>
           </div>
 
+          {/* EMAIL INPUT WITH ICON */}
           <div>
             <label className="text-sm text-slate-600">Email Address</label>
-            <input
-              type="email"
-              placeholder="patient@example.com"
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
+            <div className="mt-1 flex items-center rounded-xl border border-slate-200 px-3 focus-within:ring-2 focus-within:ring-blue-100">
+              <MailIcon className="h-4 w-4 text-slate-400" />
+              <input
+                type="email"
+                placeholder="patient@example.com"
+                className="w-full px-2 py-2 text-sm outline-none bg-transparent"
+              />
+            </div>
           </div>
 
           <div className="md:col-span-2">
             <label className="text-sm text-slate-600">Residential Address</label>
             <textarea
               placeholder="Full street address, city, state, zip code"
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100"
             />
           </div>
         </div>
       </div>
 
       {/* EMERGENCY */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
 
-        {/* ✅ ICON ADDED */}
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-3 bg-[#f8faff]">
           <AlertTriangleIcon className="h-4 w-4 text-[#2563eb]" />
-          Emergency & Medical Context
-        </h2>
+          <h2 className="text-sm font-semibold text-slate-700">
+            Emergency & Medical Context
+          </h2>
+        </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="p-5 grid gap-4 md:grid-cols-2">
           <div>
             <label className="text-sm text-slate-600">
               Emergency Contact Name & Relation
@@ -223,13 +233,12 @@ export default function PatientRegisterPage() {
         </div>
       </div>
 
-      {/* FOOTER BUTTONS */}
+      {/* FOOTER */}
       <div className="flex justify-end gap-2">
         <button className="rounded-xl border border-slate-200 px-4 py-2 text-sm hover:bg-slate-50">
           Cancel
         </button>
 
-        {/* ✅ ICON ADDED */}
         <button className="inline-flex items-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2 text-sm text-white hover:bg-[#1d4ed8]">
           <PrintIcon className="h-4 w-4" />
           Save Patient
