@@ -32,9 +32,7 @@ export default async function handler(
     const userResult = await pool
       .request()
       .input("email", sql.NVarChar, email)
-      .query(
-        "SELECT user_id, username, email, password_hash, role, status FROM dbo.users WHERE email = @email"
-      );
+      .execute("dbo.sp_AuthenticateUser");
 
     if (userResult.recordset.length === 0) {
       return res.status(401).json({ message: "Invalid email or password" });

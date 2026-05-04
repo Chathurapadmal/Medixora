@@ -44,7 +44,7 @@ export default async function handler(
     const userExists = await pool
       .request()
       .input("email", sql.NVarChar, email)
-      .query("SELECT user_id FROM dbo.users WHERE email = @email");
+      .execute("dbo.sp_GetUserByEmail");
 
     if (userExists.recordset.length > 0) {
       return res.status(409).json({ message: "Email already registered" });
@@ -53,26 +53,18 @@ export default async function handler(
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user
+    // Insert new user through stored procedure
     const result = await pool
       .request()
-      .input("email", sql.NVarChar, email)
-      .input("passwordHash", sql.NVarChar, hashedPassword)
       .input("username", sql.NVarChar, fullName)
+      .input("email", sql.NVarChar, email)
+      .input("password_hash", sql.NVarChar, hashedPassword)
       .input("role", sql.NVarChar, role)
       .input("status", sql.NVarChar, "active")
-      .query(`
-        DECLARE @newUserId INT;
-        SELECT @newUserId = ISNULL(MAX(user_id), 0) + 1
-        FROM dbo.users WITH (UPDLOCK, HOLDLOCK);
+      .output("user_id", sql.Int)
+      .execute("dbo.sp_RegisterUser");
 
-        INSERT INTO dbo.users (user_id, username, email, password_hash, role, status, created_at)
-        VALUES (@newUserId, @username, @email, @passwordHash, @role, @status, GETUTCDATE());
-
-        SELECT @newUserId AS user_id;
-      `);
-
-    const userId = result.recordset[0]?.user_id;
+    const userId = result.output.user_id;
 
     res.status(201).json({
       success: true,
