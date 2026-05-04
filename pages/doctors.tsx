@@ -124,7 +124,7 @@ export default function DoctorsPage() {
 
             <tbody className="text-[14px] text-slate-700">
               {doctors.map((d) => (
-                <tr key={d.id} className="border-t">
+                <tr key={d.id} className="border-t border-slate-200">
 
                   {/* ID */}
                   <td className="px-5 py-4 text-slate-500">
@@ -171,7 +171,7 @@ export default function DoctorsPage() {
         </div>
 
         {/* FOOTER */}
-        <div className="flex items-center justify-between px-5 py-3 text-sm text-slate-500 border-t">
+        <div className="flex items-center justify-between px-5 py-3 text-sm text-slate-500 border-t border-slate-200">
           <span>Showing 1 to 4 of 42 doctors</span>
 
           <div className="flex items-center gap-2">
