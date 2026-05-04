@@ -5,7 +5,6 @@ import {
   MoreIcon,
   PlusIcon,
   SearchIcon,
-  WarningSmallIcon,
 } from "../../components/dashboard-icons";
 
 type StockStatus = "In Stock" | "Low Stock" | "Out of Stock" | "Expired";
@@ -65,10 +64,10 @@ const inventoryItems: InventoryItem[] = [
 ];
 
 const statusStyles: Record<StockStatus, string> = {
-  "In Stock": "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
-  "Low Stock": "bg-amber-50 text-amber-700 ring-amber-600/20",
-  "Out of Stock": "bg-rose-50 text-rose-700 ring-rose-600/20",
-  Expired: "bg-red-600 text-white ring-red-600/20",
+  "In Stock": "bg-green-300 text-green-700 ring-green-600/20",
+  "Low Stock": "bg-orange-300 text-orange-700 ring-orange-600/20",
+  "Out of Stock": "bg-red-200 text-red-700 ring-red-600/20",
+  "Expired": "bg-red-600 text-white ring-red-600/20",
 };
 
 export default function InventoryPage() {
@@ -92,14 +91,6 @@ export default function InventoryPage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/inventory/low_stock_alerts"
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 shadow-sm transition hover:bg-amber-50"
-            >
-              <WarningSmallIcon className="h-4 w-4" />
-              Low Stock Alerts
-            </Link>
-
             <Link
               href="/inventory/add_medicine"
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
@@ -125,21 +116,27 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <Link
+            href="/inventory/low_stock_alerts"
+            className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-amber-300 hover:bg-amber-100"
+          >
             <p className="text-sm font-medium text-slate-500">Low Stock</p>
             <p className="mt-2 text-2xl font-bold text-amber-600">42</p>
             <p className="mt-1 text-sm text-slate-500">
               Items below minimum threshold
             </p>
-          </div>
+          </Link>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <Link
+            href="/inventory/expiry_alerts"
+            className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-red-300 hover:bg-red-100"
+          >
             <p className="text-sm font-medium text-slate-500">Expired Items</p>
             <p className="mt-2 text-2xl font-bold text-red-600">24</p>
             <p className="mt-1 text-sm text-slate-500">
               Requires disposal protocol
             </p>
-          </div>
+          </Link>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -220,18 +217,23 @@ export default function InventoryPage() {
                     <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-500">
                       {item.id}
                     </td>
+
                     <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
                       {item.name}
                     </td>
+
                     <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                       {item.category}
                     </td>
+
                     <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
                       {item.stock}
                     </td>
+
                     <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                       {item.price}
                     </td>
+
                     <td
                       className={[
                         "whitespace-nowrap px-4 py-4 text-sm",
@@ -242,9 +244,11 @@ export default function InventoryPage() {
                     >
                       {item.expiryDate}
                     </td>
+
                     <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                       {item.supplier}
                     </td>
+
                     <td className="whitespace-nowrap px-4 py-4">
                       <span
                         className={[
@@ -255,6 +259,7 @@ export default function InventoryPage() {
                         {item.status}
                       </span>
                     </td>
+
                     <td className="whitespace-nowrap px-4 py-4 text-right">
                       <button
                         className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
