@@ -118,7 +118,7 @@ export default function PatientsPage() {
 
             <tbody className="text-[14px] text-slate-700">
               {patients.map((p) => (
-                <tr key={p.id} className="border-t">
+                <tr key={p.id} className="border-t border-slate-200">
                   <td className="px-5 py-4 text-slate-500">{p.id}</td>
 
                   <td className="px-5 py-4">
@@ -172,7 +172,7 @@ export default function PatientsPage() {
         </div>
 
         {/* FOOTER */}
-        <div className="flex items-center justify-between px-5 py-3 text-sm text-slate-500 border-t">
+        <div className="flex items-center justify-between px-5 py-3 text-sm text-slate-500 border-t border-slate-200">
           <span>Showing 1 to 4 of 24 entries</span>
 
           <div className="flex items-center gap-2">
