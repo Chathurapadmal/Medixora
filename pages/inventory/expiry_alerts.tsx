@@ -10,62 +10,53 @@ type ExpiryStatus = "Expired" | "Expiring Soon";
 
 type ExpiryItem = {
   name: string;
-  batchNo: string;
-  quantity: string;
-  expiryDate: string;
-  daysRemaining: number;
-  status: ExpiryStatus;
+  batchNo?: string;
+  quantity?: string;
+  expiryDate?: string;
+  daysRemaining?: number;
+  status?: ExpiryStatus;
 };
 
-const items: ExpiryItem[] = [
-  {
-    name: "Epinephrine Auto-Injector 0.3mg",
-    batchNo: "EP-2023-A4",
-    quantity: "12 units",
-    expiryDate: "Oct 15, 2023",
-    daysRemaining: -14,
-    status: "Expired",
-  },
-  {
-    name: "Lidocaine HCl 1% Injection",
-    batchNo: "LD-882-B1",
-    quantity: "45 vials",
-    expiryDate: "Oct 28, 2023",
-    daysRemaining: -1,
-    status: "Expired",
-  },
-  {
-    name: "Saline Solution 0.9% 500ml",
-    batchNo: "SS-991-C9",
-    quantity: "240 bags",
-    expiryDate: "Nov 12, 2023",
-    daysRemaining: 14,
-    status: "Expiring Soon",
-  },
-  {
-    name: "Amoxicillin 500mg Capsules",
-    batchNo: "AMX-442-X1",
-    quantity: "1,200 caps",
-    expiryDate: "Nov 20, 2023",
-    daysRemaining: 22,
-    status: "Expiring Soon",
-  },
-  {
-    name: "Propofol 10mg/ml Emulsion",
-    batchNo: "PRP-101-D3",
-    quantity: "50 vials",
-    expiryDate: "Nov 25, 2023",
-    daysRemaining: 27,
-    status: "Expiring Soon",
-  },
-];
+import { useEffect, useState } from "react";
 
-const statusClass: Record<ExpiryStatus, string> = {
-  Expired: "bg-red-600 text-white ring-red-600/20",
-  "Expiring Soon": "bg-amber-50 text-amber-700 ring-amber-600/20",
+const computeDaysRemaining = (expiry?: string) => {
+  if (!expiry) return undefined;
+  const d = new Date(expiry);
+  const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  return diff;
 };
 
 export default function ExpiryAlertsPage() {
+  const [items, setItems] = useState<ExpiryItem[]>([]);
+  useEffect(() => {
+    fetch("/api/inventory")
+      .then((r) => r.json())
+      .then((rows: unknown) => {
+        const safeRows = Array.isArray(rows) ? rows : [];
+        const filtered = safeRows
+          .map((r) => {
+            const row = r as Record<string, unknown>;
+            const days = computeDaysRemaining(String(row.expiryDate ?? ""));
+            const status = (row.expiryDate && typeof days === "number" && days < 0) ? "Expired" : "Expiring Soon";
+            return {
+              name: String(row.name ?? "Unknown"),
+              batchNo: String(row.batchNo ?? ""),
+              quantity: String(row.stock ?? "-"),
+              expiryDate: String(row.expiryDate ?? ""),
+              daysRemaining: days,
+              status: status as ExpiryStatus,
+            };
+          })
+          .filter((i) => Boolean(i.expiryDate));
+        setItems(filtered);
+      })
+      .catch(() => setItems([]));
+  }, []);
+
+  const statusClass: Record<ExpiryStatus, string> = {
+    Expired: "bg-red-600 text-white ring-red-600/20",
+    "Expiring Soon": "bg-amber-50 text-amber-700 ring-amber-600/20",
+  };
   return (
     <>
       <Head>
@@ -229,19 +220,19 @@ export default function ExpiryAlertsPage() {
                     <td
                       className={[
                         "whitespace-nowrap px-4 py-4 text-sm font-bold",
-                        item.daysRemaining < 0
+                        (item.daysRemaining ?? 0) < 0
                           ? "text-red-600"
                           : "text-amber-600",
                       ].join(" ")}
                     >
-                      {item.daysRemaining}
+                      {typeof item.daysRemaining === "number" ? item.daysRemaining : "-"}
                     </td>
 
                     <td className="whitespace-nowrap px-4 py-4">
                       <span
                         className={[
                           "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
-                          statusClass[item.status],
+                          statusClass[(item.status ?? "Expiring Soon") as ExpiryStatus],
                         ].join(" ")}
                       >
                         {item.status}

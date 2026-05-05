@@ -12,65 +12,46 @@ type StockStatus = "In Stock" | "Low Stock" | "Out of Stock" | "Expired";
 type InventoryItem = {
   id: string;
   name: string;
-  category: string;
-  stock: string;
-  price: string;
-  expiryDate: string;
-  supplier: string;
-  status: StockStatus;
+  category?: string;
+  stock?: number | string;
+  minimum?: number;
+  price?: string | number;
+  expiryDate?: string;
+  supplier?: string;
+  status?: StockStatus;
+  batchNo?: string;
+  description?: string;
 };
 
-const inventoryItems: InventoryItem[] = [
-  {
-    id: "MED-001",
-    name: "Amoxicillin 500mg",
-    category: "Antibiotics",
-    stock: "1,250",
-    price: "$12.50",
-    expiryDate: "2025-10-15",
-    supplier: "PharmaCorp Inc.",
-    status: "In Stock",
-  },
-  {
-    id: "MED-042",
-    name: "Ibuprofen 400mg",
-    category: "Analgesics",
-    stock: "45",
-    price: "$8.20",
-    expiryDate: "2024-08-22",
-    supplier: "MediSupply Ltd.",
-    status: "Low Stock",
-  },
-  {
-    id: "MED-088",
-    name: "Lisinopril 10mg",
-    category: "Cardiovascular",
-    stock: "0",
-    price: "$15.00",
-    expiryDate: "2026-01-10",
-    supplier: "HealthCare Bio",
-    status: "Out of Stock",
-  },
-  {
-    id: "MED-105",
-    name: "Diazepam 5mg",
-    category: "Neurological",
-    stock: "210",
-    price: "$22.50",
-    expiryDate: "2023-11-01",
-    supplier: "Global Pharma",
-    status: "Expired",
-  },
-];
-
-const statusStyles: Record<StockStatus, string> = {
-  "In Stock": "bg-green-300 text-green-700 ring-green-600/20",
-  "Low Stock": "bg-orange-300 text-orange-700 ring-orange-600/20",
-  "Out of Stock": "bg-red-200 text-red-700 ring-red-600/20",
-  "Expired": "bg-red-600 text-white ring-red-600/20",
-};
+import { useEffect, useState } from "react";
 
 export default function InventoryPage() {
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/inventory")
+      .then((r) => r.json())
+      .then((data) => {
+        if (mounted) {
+          setInventoryItems(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch(() => setInventoryItems([]))
+      .finally(() => mounted && setLoading(false));
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const statusStyles: Record<StockStatus, string> = {
+    "In Stock": "bg-green-300 text-green-700 ring-green-600/20",
+    "Low Stock": "bg-orange-300 text-orange-700 ring-orange-600/20",
+    "Out of Stock": "bg-red-200 text-red-700 ring-red-600/20",
+    "Expired": "bg-red-600 text-white ring-red-600/20",
+  };
   return (
     <>
       <Head>
@@ -212,64 +193,78 @@ export default function InventoryPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 bg-white">
-                {inventoryItems.map((item) => (
-                  <tr key={item.id} className="transition hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-500">
-                      {item.id}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                      {item.name}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.category}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                      {item.stock}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.price}
-                    </td>
-
-                    <td
-                      className={[
-                        "whitespace-nowrap px-4 py-4 text-sm",
-                        item.status === "Expired"
-                          ? "font-semibold text-red-600"
-                          : "text-slate-600",
-                      ].join(" ")}
-                    >
-                      {item.expiryDate}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.supplier}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4">
-                      <span
-                        className={[
-                          "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
-                          statusStyles[item.status],
-                        ].join(" ")}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-right">
-                      <button
-                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                        aria-label={`Actions for ${item.name}`}
-                      >
-                        <MoreIcon className="h-5 w-5" />
-                      </button>
+                {loading ? (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
+                      Loading...
                     </td>
                   </tr>
-                ))}
+                ) : inventoryItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
+                      No inventory items found.
+                    </td>
+                  </tr>
+                ) : (
+                  inventoryItems.map((item) => (
+                    <tr key={item.id} className="transition hover:bg-slate-50">
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-500">
+                        {item.id}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
+                        {item.name}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {item.category}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
+                        {String(item.stock ?? "-")}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {String(item.price ?? "-")}
+                      </td>
+
+                      <td
+                        className={[
+                          "whitespace-nowrap px-4 py-4 text-sm",
+                          item.status === "Expired"
+                            ? "font-semibold text-red-600"
+                            : "text-slate-600",
+                        ].join(" ")}
+                      >
+                        {item.expiryDate ?? "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {item.supplier ?? "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span
+                          className={[
+                            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
+                            statusStyles[item.status as StockStatus],
+                          ].join(" ")}
+                        >
+                          {item.status ?? "-"}
+                        </span>
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-right">
+                        <button
+                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          aria-label={`Actions for ${item.name}`}
+                        >
+                          <MoreIcon className="h-5 w-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

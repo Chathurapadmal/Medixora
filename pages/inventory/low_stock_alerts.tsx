@@ -10,61 +10,60 @@ type AlertStatus = "Critical" | "Low" | "Out of Stock" | "Ordered";
 
 type LowStockItem = {
   name: string;
-  category: string;
-  stock: number;
-  minimum: number;
-  status: AlertStatus;
-  supplier: string;
-  action: string;
+  category?: string;
+  stock?: number;
+  minimum?: number;
+  status?: AlertStatus;
+  supplier?: string;
+  action?: string;
 };
 
-const items: LowStockItem[] = [
-  {
-    name: "Surgical Masks (N95)",
-    category: "PPE",
-    stock: 150,
-    minimum: 500,
-    status: "Critical",
-    supplier: "MediCorp Supplies",
-    action: "Restock",
-  },
-  {
-    name: "Saline Solution (500ml)",
-    category: "IV Fluids",
-    stock: 45,
-    minimum: 100,
-    status: "Low",
-    supplier: "PharmaPlus Ltd.",
-    action: "Restock",
-  },
-  {
-    name: "Lidocaine 2%",
-    category: "Anesthetics",
-    stock: 0,
-    minimum: 50,
-    status: "Out of Stock",
-    supplier: "Apex Medical",
-    action: "Ordered",
-  },
-  {
-    name: "Syringes (10ml)",
-    category: "Consumables",
-    stock: 210,
-    minimum: 300,
-    status: "Low",
-    supplier: "MediCorp Supplies",
-    action: "Restock",
-  },
-];
-
-const statusClass: Record<AlertStatus, string> = {
-  Critical: "bg-red-50 text-red-700 ring-red-600/20",
-  Low: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  "Out of Stock": "bg-slate-900 text-white ring-slate-900/20",
-  Ordered: "bg-blue-50 text-blue-700 ring-blue-600/20",
-};
+import { useEffect, useState } from "react";
 
 export default function LowStockAlertsPage() {
+  const [items, setItems] = useState<LowStockItem[]>([]);
+  useEffect(() => {
+    fetch("/api/inventory")
+      .then((r) => r.json())
+      .then((rows: unknown) => {
+        const safeRows = Array.isArray(rows) ? rows : [];
+        const low = safeRows
+          .map((r) => {
+            const row = r as Record<string, unknown>;
+            const stock = Number(row.stock || 0);
+            const minimum = Number(row.minimum || 0);
+            const status = stock === 0 ? "Out of Stock" : stock < minimum ? "Low" : "Ordered";
+            return {
+              name: String(row.name ?? "Unknown"),
+              category: String(row.category ?? ""),
+              stock,
+              minimum,
+              supplier: String(row.supplier ?? ""),
+              action: stock < minimum ? "Restock" : "",
+              status: status as AlertStatus,
+            };
+          })
+          .filter((i) => typeof i.minimum === "number" && i.minimum > 0 && i.stock! <= i.minimum!);
+
+        setItems(low);
+      })
+      .catch(() => setItems([]));
+  }, []);
+
+  const statusClass: Record<AlertStatus, string> = {
+    Critical: "bg-red-50 text-red-700 ring-red-600/20",
+    Low: "bg-amber-50 text-amber-700 ring-amber-600/20",
+    "Out of Stock": "bg-slate-900 text-white ring-slate-900/20",
+    Ordered: "bg-blue-50 text-blue-700 ring-blue-600/20",
+  };
+
+  const getWidthClass = (value: number): string => {
+    if (value <= 0) return "w-0";
+    if (value <= 25) return "w-1/4";
+    if (value <= 50) return "w-1/2";
+    if (value <= 75) return "w-3/4";
+    return "w-full";
+  };
   return (
     <>
       <Head>
@@ -207,10 +206,9 @@ export default function LowStockAlertsPage() {
 
               <tbody className="divide-y divide-slate-100 bg-white">
                 {items.map((item) => {
-                  const percentage = Math.min(
-                    100,
-                    Math.round((item.stock / item.minimum) * 100)
-                  );
+                  const stock = Number(item.stock ?? 0);
+                  const minimum = Number(item.minimum ?? 1);
+                  const percentage = Math.min(100, Math.round((stock / minimum) * 100));
 
                   return (
                     <tr key={item.name} className="hover:bg-slate-50">
@@ -236,12 +234,12 @@ export default function LowStockAlertsPage() {
                             <div
                               className={[
                                 "h-full rounded-full",
+                                getWidthClass(percentage),
                                 item.status === "Critical" ||
                                 item.status === "Out of Stock"
                                   ? "bg-red-500"
                                   : "bg-amber-500",
                               ].join(" ")}
-                              style={{ width: `${percentage}%` }}
                             />
                           </div>
                         </div>
@@ -251,7 +249,7 @@ export default function LowStockAlertsPage() {
                         <span
                           className={[
                             "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
-                            statusClass[item.status],
+                            statusClass[(item.status ?? "Low") as AlertStatus],
                           ].join(" ")}
                         >
                           {item.status}
