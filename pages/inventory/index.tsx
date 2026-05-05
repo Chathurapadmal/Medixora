@@ -2,7 +2,6 @@ import Head from "next/head";
 import Link from "next/link";
 import {
   MedicineIcon,
-  MoreIcon,
   PlusIcon,
   SearchIcon,
 } from "../../components/dashboard-icons";
@@ -71,6 +70,99 @@ const statusStyles: Record<StockStatus, string> = {
 };
 
 export default function InventoryPage() {
+<<<<<<< Updated upstream
+=======
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [statusFilter, setStatusFilter] =
+    useState<InventoryFilterStatus>("All Statuses");
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetch("/api/inventory")
+      .then((r) => r.json())
+      .then((data) => {
+        if (mounted) {
+          setInventoryItems(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch(() => setInventoryItems([]))
+      .finally(() => mounted && setLoading(false));
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const statusStyles: Record<StockStatus, string> = {
+    "In Stock": "bg-green-300 text-green-700 ring-green-600/20",
+    "Low Stock": "bg-orange-300 text-orange-700 ring-orange-600/20",
+    "Out of Stock": "bg-red-200 text-red-700 ring-red-600/20",
+    Expired: "bg-red-600 text-white ring-red-600/20",
+  };
+
+  const normalizedItems = useMemo(
+    () =>
+      inventoryItems.map((item) => ({
+        ...item,
+        status: normalizeStatus(item.status),
+      })),
+    [inventoryItems]
+  );
+
+  const categoryOptions = useMemo(() => {
+    const categories = new Set(
+      normalizedItems
+        .map((item) => item.category?.trim())
+        .filter((value): value is string => Boolean(value))
+    );
+
+    return ["All Categories", ...Array.from(categories).sort()];
+  }, [normalizedItems]);
+
+  const filteredItems = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    return normalizedItems.filter((item) => {
+      const matchesSearch =
+        !query ||
+        [item.id, item.name, item.category, item.supplier, item.batchNo]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(query));
+
+      const matchesCategory =
+        categoryFilter === "All Categories" || item.category === categoryFilter;
+
+      const matchesStatus =
+        statusFilter === "All Statuses" || item.status === statusFilter;
+
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
+  }, [categoryFilter, normalizedItems, searchTerm, statusFilter]);
+
+  const totalMedicines = normalizedItems.length;
+
+  const criticalLevels = normalizedItems.filter((item) => {
+    const stock = Number(item.stock ?? 0);
+    const minimum = Number(item.minimum ?? 0);
+    return stock > 0 && stock < minimum;
+  }).length;
+
+  const expiredItems = normalizedItems.filter(
+    (item) => item.status === "Expired"
+  ).length;
+
+  const outOfStockItems = normalizedItems.filter(
+    (item) => Number(item.stock ?? 0) <= 0
+  ).length;
+
+  const showingFrom = filteredItems.length > 0 ? 1 : 0;
+  const showingTo = filteredItems.length;
+
+>>>>>>> Stashed changes
   return (
     <>
       <Head>
@@ -107,11 +199,18 @@ export default function InventoryPage() {
               <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
                 <MedicineIcon className="h-5 w-5" />
               </div>
+
               <div>
                 <p className="text-sm font-medium text-slate-500">
                   Total Medicines
                 </p>
+<<<<<<< Updated upstream
                 <p className="text-2xl font-bold text-slate-950">248</p>
+=======
+                <p className="text-2xl font-bold text-slate-950">
+                  {totalMedicines}
+                </p>
+>>>>>>> Stashed changes
               </div>
             </div>
           </div>
@@ -120,8 +219,17 @@ export default function InventoryPage() {
             href="/inventory/low_stock_alerts"
             className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-amber-300 hover:bg-amber-100"
           >
+<<<<<<< Updated upstream
             <p className="text-sm font-medium text-slate-500">Low Stock</p>
             <p className="mt-2 text-2xl font-bold text-amber-600">42</p>
+=======
+            <p className="text-sm font-medium text-slate-500">
+              Critical Levels
+            </p>
+            <p className="mt-2 text-2xl font-bold text-amber-600">
+              {criticalLevels + outOfStockItems}
+            </p>
+>>>>>>> Stashed changes
             <p className="mt-1 text-sm text-slate-500">
               Items below minimum threshold
             </p>
@@ -132,7 +240,13 @@ export default function InventoryPage() {
             className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-red-300 hover:bg-red-100"
           >
             <p className="text-sm font-medium text-slate-500">Expired Items</p>
+<<<<<<< Updated upstream
             <p className="mt-2 text-2xl font-bold text-red-600">24</p>
+=======
+            <p className="mt-2 text-2xl font-bold text-red-600">
+              {expiredItems}
+            </p>
+>>>>>>> Stashed changes
             <p className="mt-1 text-sm text-slate-500">
               Requires disposal protocol
             </p>
@@ -170,7 +284,17 @@ export default function InventoryPage() {
               <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
                 Stock Status
               </span>
+<<<<<<< Updated upstream
               <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500">
+=======
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500"
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as InventoryFilterStatus)
+                }
+              >
+>>>>>>> Stashed changes
                 <option>All Statuses</option>
                 <option>In Stock</option>
                 <option>Low Stock</option>
@@ -199,7 +323,6 @@ export default function InventoryPage() {
                     "Expiry Date",
                     "Supplier",
                     "Status",
-                    "Actions",
                   ].map((header) => (
                     <th
                       key={header}
@@ -212,6 +335,7 @@ export default function InventoryPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 bg-white">
+<<<<<<< Updated upstream
                 {inventoryItems.map((item) => (
                   <tr key={item.id} className="transition hover:bg-slate-50">
                     <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-500">
@@ -220,6 +344,24 @@ export default function InventoryPage() {
 
                     <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
                       {item.name}
+=======
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-8 text-center text-sm text-slate-500"
+                    >
+                      Loading...
+                    </td>
+                  </tr>
+                ) : filteredItems.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-8 text-center text-sm text-slate-500"
+                    >
+                      No inventory items match the selected filters.
+>>>>>>> Stashed changes
                     </td>
 
                     <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
@@ -260,6 +402,7 @@ export default function InventoryPage() {
                       </span>
                     </td>
 
+<<<<<<< Updated upstream
                     <td className="whitespace-nowrap px-4 py-4 text-right">
                       <button
                         className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
@@ -270,13 +413,37 @@ export default function InventoryPage() {
                     </td>
                   </tr>
                 ))}
+=======
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {item.supplier ?? "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span
+                          className={[
+                            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
+                            statusStyles[item.status as StockStatus],
+                          ].join(" ")}
+                        >
+                          {item.status ?? "-"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+>>>>>>> Stashed changes
               </tbody>
             </table>
           </div>
 
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
+<<<<<<< Updated upstream
               Showing 1 to 4 of 248 entries
+=======
+              Showing {showingFrom} to {showingTo} of {filteredItems.length}{" "}
+              entries
+>>>>>>> Stashed changes
             </p>
 
             <div className="flex gap-2">

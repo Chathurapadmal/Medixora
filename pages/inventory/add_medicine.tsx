@@ -25,7 +25,61 @@ function Field({
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10";
 
+<<<<<<< Updated upstream
 export default function AddMedicinePage() {
+=======
+type Supplier = { id?: number; name: string };
+
+type MedicineForm = {
+  name: string;
+  category: string;
+  supplier: string;
+  code: string;
+  quantity: number;
+  minimum: number;
+  price: string;
+  expiryDate: string;
+};
+
+export default function AddMedicinePage() {
+  const [suppliers, setSuppliers] = useState<string[]>([]);
+  const [form, setForm] = useState<MedicineForm>({
+    name: "",
+    category: "",
+    supplier: "",
+    code: "",
+    quantity: 0,
+    minimum: 0,
+    price: "",
+    expiryDate: "",
+  });
+
+  useEffect(() => {
+    fetch("/api/suppliers")
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        const safeData = Array.isArray(data) ? data : [];
+        const names = safeData.map((s) =>
+          typeof s === "string" ? s : (s as Supplier).name
+        );
+        setSuppliers(names as string[]);
+      })
+      .catch(() => setSuppliers([]));
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    await fetch("/api/inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+
+    location.href = "/inventory";
+  }
+
+>>>>>>> Stashed changes
   return (
     <>
       <Head>
@@ -82,7 +136,7 @@ export default function AddMedicinePage() {
                   Clinical Identification
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Medicine identity, category, supplier, and dosage notes.
+                  Medicine identity, category, and supplier details.
                 </p>
               </div>
             </div>
@@ -96,7 +150,18 @@ export default function AddMedicinePage() {
               </Field>
 
               <Field label="Category" required>
+<<<<<<< Updated upstream
                 <select className={inputClass} defaultValue="">
+=======
+                <select
+                  className={inputClass}
+                  aria-label="Category"
+                  value={form.category}
+                  onChange={(e) =>
+                    setForm({ ...form, category: e.target.value })
+                  }
+                >
+>>>>>>> Stashed changes
                   <option value="" disabled>
                     Select Category
                   </option>
@@ -109,7 +174,18 @@ export default function AddMedicinePage() {
               </Field>
 
               <Field label="Primary Supplier" required>
+<<<<<<< Updated upstream
                 <select className={inputClass} defaultValue="">
+=======
+                <select
+                  className={inputClass}
+                  aria-label="Primary Supplier"
+                  value={form.supplier}
+                  onChange={(e) =>
+                    setForm({ ...form, supplier: e.target.value })
+                  }
+                >
+>>>>>>> Stashed changes
                   <option value="" disabled>
                     Select Supplier
                   </option>
@@ -125,6 +201,7 @@ export default function AddMedicinePage() {
                   placeholder="Auto generated or enter manually"
                 />
               </Field>
+<<<<<<< Updated upstream
 
               <div className="md:col-span-2">
                 <Field label="Description & Dosage Guidelines">
@@ -134,6 +211,8 @@ export default function AddMedicinePage() {
                   />
                 </Field>
               </div>
+=======
+>>>>>>> Stashed changes
             </div>
           </section>
 
@@ -148,8 +227,7 @@ export default function AddMedicinePage() {
                   Stock Metrics
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Initial quantity, warning threshold, price, expiry, and
-                  location.
+                  Initial quantity, warning threshold, price, and expiry.
                 </p>
               </div>
             </div>
@@ -161,6 +239,13 @@ export default function AddMedicinePage() {
                     className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
                     placeholder="500"
                     type="number"
+<<<<<<< Updated upstream
+=======
+                    value={form.quantity}
+                    onChange={(e) =>
+                      setForm({ ...form, quantity: Number(e.target.value) })
+                    }
+>>>>>>> Stashed changes
                   />
                   <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
                     Units
@@ -174,6 +259,13 @@ export default function AddMedicinePage() {
                     className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
                     placeholder="100"
                     type="number"
+<<<<<<< Updated upstream
+=======
+                    value={form.minimum}
+                    onChange={(e) =>
+                      setForm({ ...form, minimum: Number(e.target.value) })
+                    }
+>>>>>>> Stashed changes
                   />
                   <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
                     Units
@@ -194,11 +286,19 @@ export default function AddMedicinePage() {
                     placeholder="12.50"
                     type="number"
                     step="0.01"
+<<<<<<< Updated upstream
+=======
+                    value={form.price}
+                    onChange={(e) =>
+                      setForm({ ...form, price: e.target.value })
+                    }
+>>>>>>> Stashed changes
                   />
                 </div>
               </Field>
 
               <Field label="Expiry Date" required>
+<<<<<<< Updated upstream
                 <input className={inputClass} type="date" />
               </Field>
 
@@ -215,6 +315,17 @@ export default function AddMedicinePage() {
 
               <Field label="Batch Number">
                 <input className={inputClass} placeholder="e.g. AMX-442-X1" />
+=======
+                <input
+                  className={inputClass}
+                  type="date"
+                  aria-label="Expiry Date"
+                  value={form.expiryDate}
+                  onChange={(e) =>
+                    setForm({ ...form, expiryDate: e.target.value })
+                  }
+                />
+>>>>>>> Stashed changes
               </Field>
             </div>
           </section>
