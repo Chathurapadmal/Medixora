@@ -71,7 +71,16 @@ export default function LowStockAlertsPage() {
         <title>Low Stock Alerts - MediStock</title>
       </Head>
 
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="relative mx-auto max-w-7xl space-y-6">
+        <Link
+          href="/inventory"
+          className="absolute -left-14 -top-1 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-white text-2xl font-bold text-blue-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          aria-label="Back to inventory dashboard"
+          title="Back to Inventory"
+        >
+          ←
+        </Link>
+
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
