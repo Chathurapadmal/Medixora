@@ -363,30 +363,23 @@ export function MailIcon(props: IconProps) {
   );
 }
 
-export function FilterIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M3 5h18l-7 8v6l-4-2v-6L3 5z" />
-    </Icon>
-  );
-}
+export const FilterIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M3 4h18l-7 8v6l-4 2v-8L3 4z" />
+  </svg>
+);
 
-export function CalendarIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </Icon>
-  );
-}
+export const CalendarIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M8 7V3m8 4V3M4 11h16M4 19h16M5 7h14a2 2 0 012 2v10H3V9a2 2 0 012-2z" />
+  </svg>
+);
 
-export function ImportIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M12 3v12" />
-      <path d="M8 9l4 4 4-4" />
-      <path d="M5 21h14" />
-    </Icon>
-  );
-}
-
+export const ImportIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+  </svg>
+);
