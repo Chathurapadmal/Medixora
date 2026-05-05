@@ -15,6 +15,8 @@ type ExpiryItem = {
   expiryDate?: string;
   daysRemaining?: number;
   status?: ExpiryStatus;
+  price?: number;
+  stock?: number;
 };
 
 import { useEffect, useState } from "react";
@@ -28,10 +30,15 @@ const computeDaysRemaining = (expiry?: string) => {
 
 export default function ExpiryAlertsPage() {
   const [items, setItems] = useState<ExpiryItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expiredCount, setExpiredCount] = useState(0);
+  const [expiringCount, setExpiringCount] = useState(0);
+  const [valueAtRisk, setValueAtRisk] = useState(0);
   useEffect(() => {
     fetch("/api/inventory")
       .then((r) => r.json())
-      .then((rows: unknown) => {
+      .then((data: unknown) => {
+        const rows = Array.isArray(data) ? data : (data as Record<string, unknown>)?.value || [];
         const safeRows = Array.isArray(rows) ? rows : [];
         const filtered = safeRows
           .map((r) => {
@@ -45,12 +52,30 @@ export default function ExpiryAlertsPage() {
               expiryDate: String(row.expiryDate ?? ""),
               daysRemaining: days,
               status: status as ExpiryStatus,
+              price: Number(row.price ?? 0),
+              stock: Number(row.stock ?? 0),
             };
           })
           .filter((i) => Boolean(i.expiryDate));
         setItems(filtered);
+
+        // Compute summary metrics from filtered items
+        const expired = filtered.filter((i) => (i.daysRemaining ?? 999) < 0).length;
+        const expiring = filtered.filter((i) => (i.daysRemaining ?? 999) >= 0 && (i.daysRemaining ?? 999) < 30).length;
+        const riskValue = filtered
+          .filter((i) => (i.daysRemaining ?? 999) < 30) // Expired or expiring soon
+          .reduce((sum, i) => sum + (i.price ?? 0) * (i.stock ?? 0), 0);
+
+        setExpiredCount(expired);
+        setExpiringCount(expiring);
+        setValueAtRisk(riskValue);
       })
-      .catch(() => setItems([]));
+      .catch(() => {
+        setItems([]);
+        setExpiredCount(0);
+        setExpiringCount(0);
+        setValueAtRisk(0);
+      });
   }, []);
 
   const statusClass: Record<ExpiryStatus, string> = {
@@ -115,7 +140,7 @@ export default function ExpiryAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Expired Items
                 </p>
-                <p className="mt-2 text-3xl font-bold text-red-600">24</p>
+                <p className="mt-2 text-3xl font-bold text-red-600">{expiredCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Requires immediate disposal protocol.
                 </p>
@@ -133,7 +158,7 @@ export default function ExpiryAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Expiring Soon
                 </p>
-                <p className="mt-2 text-3xl font-bold text-amber-600">156</p>
+                <p className="mt-2 text-3xl font-bold text-amber-600">{expiringCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Less than 30 days. Review usage rates.
                 </p>
@@ -149,7 +174,7 @@ export default function ExpiryAlertsPage() {
             <p className="text-sm font-semibold text-slate-500">
               Value at Risk
             </p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">$14,250</p>
+            <p className="mt-2 text-3xl font-bold text-slate-950">${valueAtRisk.toFixed(2)}</p>
             <p className="mt-1 text-sm text-emerald-600">
               +2.4% vs last month
             </p>
@@ -172,6 +197,8 @@ export default function ExpiryAlertsPage() {
               <input
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
                 placeholder="Search item name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
@@ -199,7 +226,11 @@ export default function ExpiryAlertsPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 bg-white">
-                {items.map((item) => (
+                {items
+                  .filter((item) =>
+                    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((item) => (
                   <tr key={item.batchNo} className="hover:bg-slate-50">
                     <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
                       {item.name}
@@ -239,7 +270,8 @@ export default function ExpiryAlertsPage() {
                       </span>
                     </td>
                   </tr>
-                ))}
+                ))
+                }
               </tbody>
             </table>
           </div>
