@@ -6,6 +6,8 @@ type ResponseData = {
   success?: boolean;
   message: string;
   userId?: number;
+  username?: string;
+  role?: string;
   token?: string;
   error?: string;
 };
@@ -28,11 +30,15 @@ export default async function handler(
   try {
     const pool = await getConnection();
 
-    // Find user by email
+    // Find user directly from dbo.users to avoid depending on stored procedures
     const userResult = await pool
       .request()
       .input("email", sql.NVarChar, email)
-      .execute("dbo.sp_AuthenticateUser");
+      .query(`
+        SELECT user_id, username, email, password_hash, [role], status, created_at
+        FROM dbo.users
+        WHERE email = @email
+      `);
 
     if (userResult.recordset.length === 0) {
       return res.status(401).json({ message: "Invalid email or password" });
@@ -55,13 +61,18 @@ export default async function handler(
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // In production, you'd generate a JWT or session token here
-    const token = Buffer.from(`${user.user_id}:${email}`).toString("base64");
+    // In production, you'd generate a JWT or session token here.
+    // The client only uses this as a lightweight logged-in marker.
+    const token = Buffer.from(
+      `${user.user_id}:${user.username}:${user.email}`
+    ).toString("base64");
 
     res.status(200).json({
       success: true,
       message: "Login successful",
       userId: user.user_id,
+      username: user.username,
+      role: user.role,
       token,
     });
   } catch (error: any) {
