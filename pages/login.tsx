@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useState, FormEvent } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
 export default function LoginPage() {
@@ -11,8 +11,14 @@ export default function LoginPage() {
     role: "",
     email: "",
     password: "",
-    rememberMe: false,
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      router.replace("/");
+    }
+  }, [router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -60,6 +66,8 @@ export default function LoginPage() {
       // Store token
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("userId", data.userId);
+      localStorage.setItem("userName", data.username || "");
+      localStorage.setItem("userRole", data.role || "");
       
       setSuccess(true);
       setTimeout(() => {
@@ -162,13 +170,6 @@ export default function LoginPage() {
                   </svg>
                 </div>
               </label>
-
-              <div className="flex items-center justify-between pt-1">
-                <label className="flex items-center gap-2 text-[15px] text-[#555d6f]">
-                  <input type="checkbox" name="rememberMe" checked={formData.rememberMe} onChange={handleChange} className="h-4 w-4 rounded border-[#c1c8d8]" disabled={loading} />
-                  Remember me for 30 days
-                </label>
-              </div>
 
               <button type="submit" disabled={loading || success} className="h-12 w-full rounded-none bg-[#0b56d1] px-4 text-[15px] font-semibold text-white shadow-[0_10px_20px_rgba(11,86,209,0.25)] transition hover:bg-[#0846ad] disabled:opacity-50">
                 {loading ? "Signing In..." : "Sign In to MediStock →"}

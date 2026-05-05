@@ -126,24 +126,35 @@ function MetricCard({
 
 export default function Home() {
     const router = useRouter();
-    const [user, setUser] = useState<{ email: string } | null>(null);
+    const [user, setUser] = useState<{ username: string; role: string } | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
       const token = localStorage.getItem("authToken");
       if (!token) {
-        router.push("/login");
+        router.replace("/login");
+        return;
+      }
+
+      const storedUsername = localStorage.getItem("userName");
+      const storedRole = localStorage.getItem("userRole");
+
+      if (storedUsername && storedRole) {
+        setUser({ username: storedUsername, role: storedRole });
+        setLoading(false);
         return;
       }
 
       try {
-        // Decode token: Base64 of "userId:email"
-        const decoded = Buffer.from(token, "base64").toString("utf-8");
-        const [, email] = decoded.split(":");
-        setUser({ email });
+        const decoded = atob(token);
+        const [, username, role] = decoded.split(":");
+        setUser({
+          username: username || "Staff User",
+          role: role || "Staff",
+        });
       } catch (err) {
         console.error("Failed to decode token:", err);
-        router.push("/login");
+        router.replace("/login");
       } finally {
         setLoading(false);
       }
@@ -162,7 +173,7 @@ export default function Home() {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-slate-900">Dashboard Overview</h1>
-            <p className="mt-1 text-[14px] text-slate-500">Welcome back, {user.email}. Here is today&apos;s summary.</p>
+            <p className="mt-1 text-[14px] text-slate-500">Welcome back, {user.username}. Here is today&apos;s summary.</p>
           </div>
 
           <div className="flex flex-wrap gap-3">

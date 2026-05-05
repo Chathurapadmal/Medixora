@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import Link from "next/link";
 import {
   AppointmentsIcon,
@@ -27,8 +28,18 @@ const navItems = [
 ];
 
 export default function Sidebar() {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userRole");
+    router.replace("/login");
+  };
+
   return (
-    <aside className="hidden md:flex w-[255px] shrink-0 h-screen sticky top-0 flex-col border-r border-slate-200/80 bg-white">
+    <aside className="hidden md:flex h-screen w-[255px] shrink-0 flex-col border-r border-slate-200/80 bg-white">
       <div className="p-5 pb-4">
         <div className="flex items-center gap-3">
           <div className="h-11 w-11 rounded-xl bg-[#4f74ff] flex items-center justify-center text-white shadow-[0_10px_18px_rgba(79,116,255,0.28)]">
@@ -76,6 +87,20 @@ export default function Sidebar() {
             <SupportIcon className="h-4 w-4 text-slate-500" />
             <span>Support</span>
           </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium text-[#b91c1c] transition hover:bg-red-50 hover:text-[#991b1b]"
+          >
+            <span className="flex h-4 w-4 items-center justify-center text-[#dc2626]">
+              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+                <path d="M10 7V5.2A1.2 1.2 0 0 1 11.2 4h6.6A1.2 1.2 0 0 1 19 5.2v13.6A1.2 1.2 0 0 1 17.8 20h-6.6A1.2 1.2 0 0 1 10 18.8V17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M4.5 12h9.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="m10.2 8.6 3.5 3.4-3.5 3.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+            <span>Logout</span>
+          </button>
         </div>
       </div>
     </aside>

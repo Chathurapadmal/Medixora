@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useState, FormEvent } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
 export default function RegisterPage() {
@@ -8,15 +8,20 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "",
-    phone: "",
+    username: "",
     email: "",
     role: "",
-    department: "",
     password: "",
     confirmPassword: "",
     agreeTerms: false,
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      router.replace("/");
+    }
+  }, [router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -37,7 +42,7 @@ export default function RegisterPage() {
 
     // Client-side validation
     if (
-      !formData.fullName ||
+      !formData.username ||
       !formData.email ||
       !formData.role ||
       !formData.password
@@ -68,11 +73,9 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName: formData.fullName,
+          username: formData.username,
           email: formData.email,
           role: formData.role,
-          department: formData.department,
-          phone: formData.phone,
           password: formData.password,
         }),
       });
@@ -131,26 +134,16 @@ export default function RegisterPage() {
           )}
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <label className="block">
-              <div className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#5e6472]">Full name *</div>
+            <label className="sm:col-span-2 block">
+              <div className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#5e6472]">Username *</div>
               <div className="relative">
                 <svg viewBox="0 0 24 24" fill="none" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8091]">
                   <path d="M12 12a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" strokeWidth="1.8" />
                   <path d="M6.2 18.2c.9-2.1 3-3.3 5.8-3.3s5 1.2 5.8 3.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="h-12 w-full rounded-lg border border-[#cfd4e0] bg-white pl-10 pr-3 text-[15px] text-slate-800 outline-none placeholder:text-[#8f95a5] focus:border-[#0b56d1]" placeholder="e.g. Dr. Sarah Jenkins" disabled={loading} />
+                <input type="text" name="username" value={formData.username} onChange={handleChange} className="h-12 w-full rounded-lg border border-[#cfd4e0] bg-white pl-10 pr-3 text-[15px] text-slate-800 outline-none placeholder:text-[#8f95a5] focus:border-[#0b56d1]" placeholder="e.g. Dr. Sarah Jenkins" disabled={loading} />
               </div>
             </label>
-            <label className="block">
-              <div className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#5e6472]">Phone number</div>
-              <div className="relative">
-                <svg viewBox="0 0 24 24" fill="none" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8091]">
-                  <path d="M7.5 4.8h2.2c.3 0 .6.2.7.5l.8 2.6c.1.3 0 .7-.3.9l-1.2 1.2a12.3 12.3 0 0 0 4.7 4.7l1.2-1.2c.3-.3.6-.4.9-.3l2.6.8c.3.1.5.4.5.7v2.2c0 .4-.3.7-.6.8-1 .2-2 .3-2.9.1A14.8 14.8 0 0 1 5.1 7.7c-.2-.9-.1-1.9.1-2.9.1-.3.4-.6.8-.6Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                </svg>
-                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="h-12 w-full rounded-lg border border-[#cfd4e0] bg-white pl-10 pr-3 text-[15px] text-slate-800 outline-none placeholder:text-[#8f95a5] focus:border-[#0b56d1]" placeholder="+1 (555) 000-0000" disabled={loading} />
-              </div>
-            </label>
-
             <label className="sm:col-span-2 block">
               <div className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#5e6472]">Email address *</div>
               <div className="relative">
@@ -170,21 +163,6 @@ export default function RegisterPage() {
                   <option value="Admin">Admin</option>
                   <option value="Doctor">Doctor</option>
                   <option value="Nurse">Nurse</option>
-                </select>
-                <svg viewBox="0 0 20 20" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#747b8c]" fill="none">
-                  <path d="m5.5 7.8 4.5 4.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </label>
-
-            <label>
-              <div className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#5e6472]">Department</div>
-              <div className="relative">
-                <select name="department" value={formData.department} onChange={handleChange} className="h-12 w-full appearance-none rounded-lg border border-[#cfd4e0] bg-white px-3 pr-9 text-[15px] text-[#303646] outline-none focus:border-[#0b56d1]" disabled={loading}>
-                  <option value="">Select Department</option>
-                  <option value="General">General</option>
-                  <option value="Pharmacy">Pharmacy</option>
-                  <option value="Billing">Billing</option>
                 </select>
                 <svg viewBox="0 0 20 20" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#747b8c]" fill="none">
                   <path d="m5.5 7.8 4.5 4.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
