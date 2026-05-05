@@ -10,6 +10,7 @@ type AlertStatus = "Critical" | "Low" | "Out of Stock" | "Ordered";
 
 type LowStockItem = {
   name: string;
+<<<<<<< HEAD
   category?: string;
   stock?: number;
   minimum?: number;
@@ -64,6 +65,63 @@ export default function LowStockAlertsPage() {
     if (value <= 75) return "w-3/4";
     return "w-full";
   };
+=======
+  category: string;
+  stock: number;
+  minimum: number;
+  status: AlertStatus;
+  supplier: string;
+  action: string;
+};
+
+const items: LowStockItem[] = [
+  {
+    name: "Surgical Masks (N95)",
+    category: "PPE",
+    stock: 150,
+    minimum: 500,
+    status: "Critical",
+    supplier: "MediCorp Supplies",
+    action: "Restock",
+  },
+  {
+    name: "Saline Solution (500ml)",
+    category: "IV Fluids",
+    stock: 45,
+    minimum: 100,
+    status: "Low",
+    supplier: "PharmaPlus Ltd.",
+    action: "Restock",
+  },
+  {
+    name: "Lidocaine 2%",
+    category: "Anesthetics",
+    stock: 0,
+    minimum: 50,
+    status: "Out of Stock",
+    supplier: "Apex Medical",
+    action: "Ordered",
+  },
+  {
+    name: "Syringes (10ml)",
+    category: "Consumables",
+    stock: 210,
+    minimum: 300,
+    status: "Low",
+    supplier: "MediCorp Supplies",
+    action: "Restock",
+  },
+];
+
+const statusClass: Record<AlertStatus, string> = {
+  Critical: "bg-red-50 text-red-700 ring-red-600/20",
+  Low: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  "Out of Stock": "bg-slate-900 text-white ring-slate-900/20",
+  Ordered: "bg-blue-50 text-blue-700 ring-blue-600/20",
+};
+
+export default function LowStockAlertsPage() {
+>>>>>>> 938c88d3dc73f1657f793ea6c5ccff50893f11a4
   return (
     <>
       <Head>
@@ -206,9 +264,16 @@ export default function LowStockAlertsPage() {
 
               <tbody className="divide-y divide-slate-100 bg-white">
                 {items.map((item) => {
+<<<<<<< HEAD
                   const stock = Number(item.stock ?? 0);
                   const minimum = Number(item.minimum ?? 1);
                   const percentage = Math.min(100, Math.round((stock / minimum) * 100));
+=======
+                  const percentage = Math.min(
+                    100,
+                    Math.round((item.stock / item.minimum) * 100)
+                  );
+>>>>>>> 938c88d3dc73f1657f793ea6c5ccff50893f11a4
 
                   return (
                     <tr key={item.name} className="hover:bg-slate-50">
@@ -234,12 +299,19 @@ export default function LowStockAlertsPage() {
                             <div
                               className={[
                                 "h-full rounded-full",
+<<<<<<< HEAD
                                 getWidthClass(percentage),
+=======
+>>>>>>> 938c88d3dc73f1657f793ea6c5ccff50893f11a4
                                 item.status === "Critical" ||
                                 item.status === "Out of Stock"
                                   ? "bg-red-500"
                                   : "bg-amber-500",
                               ].join(" ")}
+<<<<<<< HEAD
+=======
+                              style={{ width: `${percentage}%` }}
+>>>>>>> 938c88d3dc73f1657f793ea6c5ccff50893f11a4
                             />
                           </div>
                         </div>
@@ -249,7 +321,11 @@ export default function LowStockAlertsPage() {
                         <span
                           className={[
                             "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
+<<<<<<< HEAD
                             statusClass[(item.status ?? "Low") as AlertStatus],
+=======
+                            statusClass[item.status],
+>>>>>>> 938c88d3dc73f1657f793ea6c5ccff50893f11a4
                           ].join(" ")}
                         >
                           {item.status}
