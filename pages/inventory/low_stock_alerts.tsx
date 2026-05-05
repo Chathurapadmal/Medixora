@@ -22,10 +22,15 @@ import { useEffect, useState } from "react";
 
 export default function LowStockAlertsPage() {
   const [items, setItems] = useState<LowStockItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [criticalLevelCount, setCriticalLevelCount] = useState(0);
+  const [outOfStockCount, setOutOfStockCount] = useState(0);
   useEffect(() => {
     fetch("/api/inventory")
       .then((r) => r.json())
-      .then((rows: unknown) => {
+      .then((data: unknown) => {
+        const rows = Array.isArray(data) ? data : (data as Record<string, unknown>)?.value || [];
         const safeRows = Array.isArray(rows) ? rows : [];
         const low = safeRows
           .map((r) => {
@@ -46,8 +51,22 @@ export default function LowStockAlertsPage() {
           .filter((i) => typeof i.minimum === "number" && i.minimum > 0 && i.stock! <= i.minimum!);
 
         setItems(low);
+
+        // Compute summary counts from filtered items
+        const outOfStock = low.filter((i) => i.stock === 0).length;
+        const lowStock = low.filter((i) => i.status === "Low").length;
+        const critical = low.filter((i) => (i.stock ?? 0) < ((i.minimum ?? 1) * 0.25)).length;
+
+        setOutOfStockCount(outOfStock);
+        setLowStockCount(lowStock);
+        setCriticalLevelCount(critical);
       })
-      .catch(() => setItems([]));
+      .catch(() => {
+        setItems([]);
+        setOutOfStockCount(0);
+        setLowStockCount(0);
+        setCriticalLevelCount(0);
+      });
   }, []);
 
   const statusClass: Record<AlertStatus, string> = {
@@ -114,7 +133,7 @@ export default function LowStockAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Low Stock
                 </p>
-                <p className="mt-2 text-3xl font-bold text-red-600">42</p>
+                <p className="mt-2 text-3xl font-bold text-red-600">{lowStockCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   +5 since yesterday
                 </p>
@@ -132,7 +151,7 @@ export default function LowStockAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Critical Levels
                 </p>
-                <p className="mt-2 text-3xl font-bold text-amber-600">18</p>
+                <p className="mt-2 text-3xl font-bold text-amber-600">{criticalLevelCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Requires immediate attention
                 </p>
@@ -150,7 +169,7 @@ export default function LowStockAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Out of Stock
                 </p>
-                <p className="mt-2 text-3xl font-bold text-slate-950">3</p>
+                <p className="mt-2 text-3xl font-bold text-slate-950">{outOfStockCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Pending supplier delivery
                 </p>
@@ -179,6 +198,8 @@ export default function LowStockAlertsPage() {
               <input
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
                 placeholder="Search alerts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
@@ -205,7 +226,13 @@ export default function LowStockAlertsPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 bg-white">
-                {items.map((item) => {
+                {items
+                  .filter(
+                    (item) =>
+                      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      item.category?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((item) => {
                   const stock = Number(item.stock ?? 0);
                   const minimum = Number(item.minimum ?? 1);
                   const percentage = Math.min(100, Math.round((stock / minimum) * 100));
@@ -267,7 +294,8 @@ export default function LowStockAlertsPage() {
                       </td>
                     </tr>
                   );
-                })}
+                })
+                }
               </tbody>
             </table>
           </div>
