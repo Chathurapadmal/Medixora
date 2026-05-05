@@ -33,13 +33,10 @@ type MedicineForm = {
   category: string;
   supplier: string;
   code: string;
-  description: string;
   quantity: number;
   minimum: number;
   price: string;
   expiryDate: string;
-  location: string;
-  batchNo: string;
 };
 
 export default function AddMedicinePage() {
@@ -49,13 +46,10 @@ export default function AddMedicinePage() {
     category: "",
     supplier: "",
     code: "",
-    description: "",
     quantity: 0,
     minimum: 0,
     price: "",
     expiryDate: "",
-    location: "",
-    batchNo: "",
   });
 
   useEffect(() => {
@@ -64,7 +58,9 @@ export default function AddMedicinePage() {
       .then((data: unknown) => {
         const safeData = Array.isArray(data) ? data : [];
         // suppliers API may return objects or strings
-        const names = safeData.map((s) => (typeof s === "string" ? s : (s as Supplier).name));
+        const names = safeData.map((s) =>
+          typeof s === "string" ? s : (s as Supplier).name
+        );
         setSuppliers(names as string[]);
       })
       .catch(() => setSuppliers([]));
@@ -158,7 +154,9 @@ export default function AddMedicinePage() {
                   className={inputClass}
                   aria-label="Category"
                   value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, category: e.target.value })
+                  }
                 >
                   <option value="" disabled>
                     Select Category
@@ -176,7 +174,9 @@ export default function AddMedicinePage() {
                   className={inputClass}
                   aria-label="Primary Supplier"
                   value={form.supplier}
-                  onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, supplier: e.target.value })
+                  }
                 >
                   <option value="" disabled>
                     Select Supplier
@@ -196,18 +196,6 @@ export default function AddMedicinePage() {
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
                 />
               </Field>
-
-              <div className="md:col-span-2">
-                <Field label="Description & Dosage Guidelines">
-                  <textarea
-                    className={`${inputClass} min-h-28 resize-y`}
-                    placeholder="Add dosage guidelines, handling notes, or safety instructions..."
-                    aria-label="Description and Dosage Guidelines"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  />
-                </Field>
-              </div>
             </div>
           </section>
 
@@ -237,7 +225,9 @@ export default function AddMedicinePage() {
                     aria-label="Initial Quantity"
                     type="number"
                     value={form.quantity}
-                    onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setForm({ ...form, quantity: Number(e.target.value) })
+                    }
                   />
                   <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
                     Units
@@ -253,7 +243,9 @@ export default function AddMedicinePage() {
                     aria-label="Minimum Alert Stock"
                     type="number"
                     value={form.minimum}
-                    onChange={(e) => setForm({ ...form, minimum: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setForm({ ...form, minimum: Number(e.target.value) })
+                    }
                   />
                   <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
                     Units
@@ -276,28 +268,23 @@ export default function AddMedicinePage() {
                     type="number"
                     step="0.01"
                     value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, price: e.target.value })
+                    }
                   />
                 </div>
               </Field>
 
               <Field label="Expiry Date" required>
-                <input className={inputClass} type="date" aria-label="Expiry Date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
-              </Field>
-
-              <Field label="Storage Location">
-                <select className={inputClass} aria-label="Storage Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}>
-                  <option value="" disabled>
-                    Select Aisle / Shelf
-                  </option>
-                  <option>Aisle A - Shelf 1 (Cold Storage)</option>
-                  <option>Aisle B - Shelf 3</option>
-                  <option>Aisle C - Shelf 2 (Secure)</option>
-                </select>
-              </Field>
-
-              <Field label="Batch Number">
-                <input className={inputClass} placeholder="e.g. AMX-442-X1" aria-label="Batch Number" value={form.batchNo} onChange={(e) => setForm({ ...form, batchNo: e.target.value })} />
+                <input
+                  className={inputClass}
+                  type="date"
+                  aria-label="Expiry Date"
+                  value={form.expiryDate}
+                  onChange={(e) =>
+                    setForm({ ...form, expiryDate: e.target.value })
+                  }
+                />
               </Field>
             </div>
           </section>

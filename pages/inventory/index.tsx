@@ -2,7 +2,6 @@ import Head from "next/head";
 import Link from "next/link";
 import {
   MedicineIcon,
-  MoreIcon,
   PlusIcon,
   SearchIcon,
 } from "../../components/dashboard-icons";
@@ -38,10 +37,12 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [statusFilter, setStatusFilter] = useState<InventoryFilterStatus>("All Statuses");
+  const [statusFilter, setStatusFilter] =
+    useState<InventoryFilterStatus>("All Statuses");
 
   useEffect(() => {
     let mounted = true;
+
     fetch("/api/inventory")
       .then((r) => r.json())
       .then((data) => {
@@ -61,7 +62,7 @@ export default function InventoryPage() {
     "In Stock": "bg-green-300 text-green-700 ring-green-600/20",
     "Low Stock": "bg-orange-300 text-orange-700 ring-orange-600/20",
     "Out of Stock": "bg-red-200 text-red-700 ring-red-600/20",
-    "Expired": "bg-red-600 text-white ring-red-600/20",
+    Expired: "bg-red-600 text-white ring-red-600/20",
   };
 
   const normalizedItems = useMemo(
@@ -104,13 +105,20 @@ export default function InventoryPage() {
   }, [categoryFilter, normalizedItems, searchTerm, statusFilter]);
 
   const totalMedicines = normalizedItems.length;
+
   const criticalLevels = normalizedItems.filter((item) => {
     const stock = Number(item.stock ?? 0);
     const minimum = Number(item.minimum ?? 0);
     return stock > 0 && stock < minimum;
   }).length;
-  const expiredItems = normalizedItems.filter((item) => item.status === "Expired").length;
-  const outOfStockItems = normalizedItems.filter((item) => Number(item.stock ?? 0) <= 0).length;
+
+  const expiredItems = normalizedItems.filter(
+    (item) => item.status === "Expired"
+  ).length;
+
+  const outOfStockItems = normalizedItems.filter(
+    (item) => Number(item.stock ?? 0) <= 0
+  ).length;
 
   const showingFrom = filteredItems.length > 0 ? 1 : 0;
   const showingTo = filteredItems.length;
@@ -155,7 +163,9 @@ export default function InventoryPage() {
                 <p className="text-sm font-medium text-slate-500">
                   Total Medicines
                 </p>
-                <p className="text-2xl font-bold text-slate-950">{totalMedicines}</p>
+                <p className="text-2xl font-bold text-slate-950">
+                  {totalMedicines}
+                </p>
               </div>
             </div>
           </div>
@@ -164,8 +174,12 @@ export default function InventoryPage() {
             href="/inventory/low_stock_alerts"
             className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-amber-300 hover:bg-amber-100"
           >
-            <p className="text-sm font-medium text-slate-500">Critical Levels</p>
-            <p className="mt-2 text-2xl font-bold text-amber-600">{criticalLevels + outOfStockItems}</p>
+            <p className="text-sm font-medium text-slate-500">
+              Critical Levels
+            </p>
+            <p className="mt-2 text-2xl font-bold text-amber-600">
+              {criticalLevels + outOfStockItems}
+            </p>
             <p className="mt-1 text-sm text-slate-500">
               Low stock and out of stock items
             </p>
@@ -176,7 +190,9 @@ export default function InventoryPage() {
             className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-red-300 hover:bg-red-100"
           >
             <p className="text-sm font-medium text-slate-500">Expired Items</p>
-            <p className="mt-2 text-2xl font-bold text-red-600">{expiredItems}</p>
+            <p className="mt-2 text-2xl font-bold text-red-600">
+              {expiredItems}
+            </p>
             <p className="mt-1 text-sm text-slate-500">
               Requires disposal protocol
             </p>
@@ -222,7 +238,9 @@ export default function InventoryPage() {
               <select
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as InventoryFilterStatus)}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as InventoryFilterStatus)
+                }
               >
                 <option>All Statuses</option>
                 <option>In Stock</option>
@@ -252,7 +270,6 @@ export default function InventoryPage() {
                     "Expiry Date",
                     "Supplier",
                     "Status",
-                    "Actions",
                   ].map((header) => (
                     <th
                       key={header}
@@ -267,13 +284,19 @@ export default function InventoryPage() {
               <tbody className="divide-y divide-slate-100 bg-white">
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td
+                      colSpan={8}
+                      className="px-4 py-8 text-center text-sm text-slate-500"
+                    >
                       Loading...
                     </td>
                   </tr>
                 ) : filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td
+                      colSpan={8}
+                      className="px-4 py-8 text-center text-sm text-slate-500"
+                    >
                       No inventory items match the selected filters.
                     </td>
                   </tr>
@@ -325,15 +348,6 @@ export default function InventoryPage() {
                           {item.status ?? "-"}
                         </span>
                       </td>
-
-                      <td className="whitespace-nowrap px-4 py-4 text-right">
-                        <button
-                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                          aria-label={`Actions for ${item.name}`}
-                        >
-                          <MoreIcon className="h-5 w-5" />
-                        </button>
-                      </td>
                     </tr>
                   ))
                 )}
@@ -343,7 +357,8 @@ export default function InventoryPage() {
 
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
-              Showing {showingFrom} to {showingTo} of {filteredItems.length} entries
+              Showing {showingFrom} to {showingTo} of {filteredItems.length}{" "}
+              entries
             </p>
 
             <div className="flex gap-2">

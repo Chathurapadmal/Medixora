@@ -174,7 +174,7 @@ export default function ExpiryAlertsPage() {
             <p className="text-sm font-semibold text-slate-500">
               Value at Risk
             </p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">${valueAtRisk.toFixed(2)}</p>
+            <p className="mt-2 text-3xl font-bold text-slate-950">Rs{valueAtRisk.toFixed(2)}</p>
             <p className="mt-1 text-sm text-emerald-600">
               +2.4% vs last month
             </p>
