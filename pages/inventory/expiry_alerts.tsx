@@ -10,69 +10,94 @@ type ExpiryStatus = "Expired" | "Expiring Soon";
 
 type ExpiryItem = {
   name: string;
-  batchNo: string;
-  quantity: string;
-  expiryDate: string;
-  daysRemaining: number;
-  status: ExpiryStatus;
+  batchNo?: string;
+  quantity?: string;
+  expiryDate?: string;
+  daysRemaining?: number;
+  status?: ExpiryStatus;
+  price?: number;
+  stock?: number;
 };
 
-const items: ExpiryItem[] = [
-  {
-    name: "Epinephrine Auto-Injector 0.3mg",
-    batchNo: "EP-2023-A4",
-    quantity: "12 units",
-    expiryDate: "Oct 15, 2023",
-    daysRemaining: -14,
-    status: "Expired",
-  },
-  {
-    name: "Lidocaine HCl 1% Injection",
-    batchNo: "LD-882-B1",
-    quantity: "45 vials",
-    expiryDate: "Oct 28, 2023",
-    daysRemaining: -1,
-    status: "Expired",
-  },
-  {
-    name: "Saline Solution 0.9% 500ml",
-    batchNo: "SS-991-C9",
-    quantity: "240 bags",
-    expiryDate: "Nov 12, 2023",
-    daysRemaining: 14,
-    status: "Expiring Soon",
-  },
-  {
-    name: "Amoxicillin 500mg Capsules",
-    batchNo: "AMX-442-X1",
-    quantity: "1,200 caps",
-    expiryDate: "Nov 20, 2023",
-    daysRemaining: 22,
-    status: "Expiring Soon",
-  },
-  {
-    name: "Propofol 10mg/ml Emulsion",
-    batchNo: "PRP-101-D3",
-    quantity: "50 vials",
-    expiryDate: "Nov 25, 2023",
-    daysRemaining: 27,
-    status: "Expiring Soon",
-  },
-];
+import { useEffect, useState } from "react";
 
-const statusClass: Record<ExpiryStatus, string> = {
-  Expired: "bg-red-600 text-white ring-red-600/20",
-  "Expiring Soon": "bg-amber-50 text-amber-700 ring-amber-600/20",
+const computeDaysRemaining = (expiry?: string) => {
+  if (!expiry) return undefined;
+  const d = new Date(expiry);
+  const diff = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  return diff;
 };
 
 export default function ExpiryAlertsPage() {
+  const [items, setItems] = useState<ExpiryItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expiredCount, setExpiredCount] = useState(0);
+  const [expiringCount, setExpiringCount] = useState(0);
+  const [valueAtRisk, setValueAtRisk] = useState(0);
+  useEffect(() => {
+    fetch("/api/inventory")
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        const rows = Array.isArray(data) ? data : (data as Record<string, unknown>)?.value || [];
+        const safeRows = Array.isArray(rows) ? rows : [];
+        const filtered = safeRows
+          .map((r) => {
+            const row = r as Record<string, unknown>;
+            const days = computeDaysRemaining(String(row.expiryDate ?? ""));
+            const status = (row.expiryDate && typeof days === "number" && days < 0) ? "Expired" : "Expiring Soon";
+            return {
+              name: String(row.name ?? "Unknown"),
+              batchNo: String(row.batchNo ?? ""),
+              quantity: String(row.stock ?? "-"),
+              expiryDate: String(row.expiryDate ?? ""),
+              daysRemaining: days,
+              status: status as ExpiryStatus,
+              price: Number(row.price ?? 0),
+              stock: Number(row.stock ?? 0),
+            };
+          })
+          .filter((i) => Boolean(i.expiryDate));
+        setItems(filtered);
+
+        // Compute summary metrics from filtered items
+        const expired = filtered.filter((i) => (i.daysRemaining ?? 999) < 0).length;
+        const expiring = filtered.filter((i) => (i.daysRemaining ?? 999) >= 0 && (i.daysRemaining ?? 999) < 30).length;
+        const riskValue = filtered
+          .filter((i) => (i.daysRemaining ?? 999) < 30) // Expired or expiring soon
+          .reduce((sum, i) => sum + (i.price ?? 0) * (i.stock ?? 0), 0);
+
+        setExpiredCount(expired);
+        setExpiringCount(expiring);
+        setValueAtRisk(riskValue);
+      })
+      .catch(() => {
+        setItems([]);
+        setExpiredCount(0);
+        setExpiringCount(0);
+        setValueAtRisk(0);
+      });
+  }, []);
+
+  const statusClass: Record<ExpiryStatus, string> = {
+    Expired: "bg-red-600 text-white ring-red-600/20",
+    "Expiring Soon": "bg-amber-50 text-amber-700 ring-amber-600/20",
+  };
   return (
     <>
       <Head>
         <title>Expiry Alerts - MediStock</title>
       </Head>
 
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="relative mx-auto max-w-7xl space-y-6">
+        <Link
+          href="/inventory"
+          className="absolute -left-14 -top-1 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-white text-2xl font-bold text-blue-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          aria-label="Back to inventory dashboard"
+          title="Back to Inventory"
+        >
+          ←
+        </Link>
+
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
@@ -115,7 +140,7 @@ export default function ExpiryAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Expired Items
                 </p>
-                <p className="mt-2 text-3xl font-bold text-red-600">24</p>
+                <p className="mt-2 text-3xl font-bold text-red-600">{expiredCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Requires immediate disposal protocol.
                 </p>
@@ -133,7 +158,7 @@ export default function ExpiryAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Expiring Soon
                 </p>
-                <p className="mt-2 text-3xl font-bold text-amber-600">156</p>
+                <p className="mt-2 text-3xl font-bold text-amber-600">{expiringCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Less than 30 days. Review usage rates.
                 </p>
@@ -149,7 +174,7 @@ export default function ExpiryAlertsPage() {
             <p className="text-sm font-semibold text-slate-500">
               Value at Risk
             </p>
-            <p className="mt-2 text-3xl font-bold text-slate-950">$14,250</p>
+            <p className="mt-2 text-3xl font-bold text-slate-950">${valueAtRisk.toFixed(2)}</p>
             <p className="mt-1 text-sm text-emerald-600">
               +2.4% vs last month
             </p>
@@ -172,6 +197,8 @@ export default function ExpiryAlertsPage() {
               <input
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
                 placeholder="Search item name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
@@ -199,7 +226,11 @@ export default function ExpiryAlertsPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 bg-white">
-                {items.map((item) => (
+                {items
+                  .filter((item) =>
+                    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((item) => (
                   <tr key={item.batchNo} className="hover:bg-slate-50">
                     <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
                       {item.name}
@@ -220,26 +251,27 @@ export default function ExpiryAlertsPage() {
                     <td
                       className={[
                         "whitespace-nowrap px-4 py-4 text-sm font-bold",
-                        item.daysRemaining < 0
+                        (item.daysRemaining ?? 0) < 0
                           ? "text-red-600"
                           : "text-amber-600",
                       ].join(" ")}
                     >
-                      {item.daysRemaining}
+                      {typeof item.daysRemaining === "number" ? item.daysRemaining : "-"}
                     </td>
 
                     <td className="whitespace-nowrap px-4 py-4">
                       <span
                         className={[
                           "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
-                          statusClass[item.status],
+                          statusClass[(item.status ?? "Expiring Soon") as ExpiryStatus],
                         ].join(" ")}
                       >
                         {item.status}
                       </span>
                     </td>
                   </tr>
-                ))}
+                ))
+                }
               </tbody>
             </table>
           </div>

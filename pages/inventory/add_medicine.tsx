@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { MedicineIcon, PlusIcon } from "../../components/dashboard-icons";
@@ -25,14 +26,77 @@ function Field({
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10";
 
+type Supplier = { id?: number; name: string };
+
+type MedicineForm = {
+  name: string;
+  category: string;
+  supplier: string;
+  code: string;
+  description: string;
+  quantity: number;
+  minimum: number;
+  price: string;
+  expiryDate: string;
+  location: string;
+  batchNo: string;
+};
+
 export default function AddMedicinePage() {
+  const [suppliers, setSuppliers] = useState<string[]>([]);
+  const [form, setForm] = useState<MedicineForm>({
+    name: "",
+    category: "",
+    supplier: "",
+    code: "",
+    description: "",
+    quantity: 0,
+    minimum: 0,
+    price: "",
+    expiryDate: "",
+    location: "",
+    batchNo: "",
+  });
+
+  useEffect(() => {
+    fetch("/api/suppliers")
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        const safeData = Array.isArray(data) ? data : [];
+        // suppliers API may return objects or strings
+        const names = safeData.map((s) => (typeof s === "string" ? s : (s as Supplier).name));
+        setSuppliers(names as string[]);
+      })
+      .catch(() => setSuppliers([]));
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await fetch("/api/inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    // simple post-submit behavior: navigate back
+    location.href = "/inventory";
+  }
+
   return (
     <>
       <Head>
         <title>Add Medicine - MediStock</title>
       </Head>
 
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="relative mx-auto max-w-5xl space-y-6">
+        <Link
+          href="/inventory"
+          className="absolute -left-14 -top-1 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-white text-2xl font-bold text-blue-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          aria-label="Back to inventory dashboard"
+          title="Back to Inventory"
+        >
+          ←
+        </Link>
+
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
@@ -61,7 +125,7 @@ export default function AddMedicinePage() {
           </div>
         </div>
 
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center gap-3">
               <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
@@ -83,11 +147,19 @@ export default function AddMedicinePage() {
                 <input
                   className={inputClass}
                   placeholder="e.g. Amoxicillin 500mg"
+                  aria-label="Medicine Name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </Field>
 
               <Field label="Category" required>
-                <select className={inputClass} defaultValue="">
+                <select
+                  className={inputClass}
+                  aria-label="Category"
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                >
                   <option value="" disabled>
                     Select Category
                   </option>
@@ -100,13 +172,18 @@ export default function AddMedicinePage() {
               </Field>
 
               <Field label="Primary Supplier" required>
-                <select className={inputClass} defaultValue="">
+                <select
+                  className={inputClass}
+                  aria-label="Primary Supplier"
+                  value={form.supplier}
+                  onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                >
                   <option value="" disabled>
                     Select Supplier
                   </option>
-                  <option>PharmaGlobal Inc.</option>
-                  <option>MedSupply Co.</option>
-                  <option>Health Logistics</option>
+                  {suppliers.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
                 </select>
               </Field>
 
@@ -114,6 +191,9 @@ export default function AddMedicinePage() {
                 <input
                   className={inputClass}
                   placeholder="Auto generated or enter manually"
+                  aria-label="Medicine Code"
+                  value={form.code}
+                  onChange={(e) => setForm({ ...form, code: e.target.value })}
                 />
               </Field>
 
@@ -122,6 +202,9 @@ export default function AddMedicinePage() {
                   <textarea
                     className={`${inputClass} min-h-28 resize-y`}
                     placeholder="Add dosage guidelines, handling notes, or safety instructions..."
+                    aria-label="Description and Dosage Guidelines"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
                 </Field>
               </div>
@@ -151,7 +234,10 @@ export default function AddMedicinePage() {
                   <input
                     className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
                     placeholder="500"
+                    aria-label="Initial Quantity"
                     type="number"
+                    value={form.quantity}
+                    onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
                   />
                   <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
                     Units
@@ -164,7 +250,10 @@ export default function AddMedicinePage() {
                   <input
                     className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
                     placeholder="100"
+                    aria-label="Minimum Alert Stock"
                     type="number"
+                    value={form.minimum}
+                    onChange={(e) => setForm({ ...form, minimum: Number(e.target.value) })}
                   />
                   <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
                     Units
@@ -183,18 +272,21 @@ export default function AddMedicinePage() {
                   <input
                     className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
                     placeholder="12.50"
+                    aria-label="Unit Price"
                     type="number"
                     step="0.01"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
                   />
                 </div>
               </Field>
 
               <Field label="Expiry Date" required>
-                <input className={inputClass} type="date" />
+                <input className={inputClass} type="date" aria-label="Expiry Date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
               </Field>
 
               <Field label="Storage Location">
-                <select className={inputClass} defaultValue="">
+                <select className={inputClass} aria-label="Storage Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}>
                   <option value="" disabled>
                     Select Aisle / Shelf
                   </option>
@@ -205,7 +297,7 @@ export default function AddMedicinePage() {
               </Field>
 
               <Field label="Batch Number">
-                <input className={inputClass} placeholder="e.g. AMX-442-X1" />
+                <input className={inputClass} placeholder="e.g. AMX-442-X1" aria-label="Batch Number" value={form.batchNo} onChange={(e) => setForm({ ...form, batchNo: e.target.value })} />
               </Field>
             </div>
           </section>

@@ -10,68 +10,95 @@ type AlertStatus = "Critical" | "Low" | "Out of Stock" | "Ordered";
 
 type LowStockItem = {
   name: string;
-  category: string;
-  stock: number;
-  minimum: number;
-  status: AlertStatus;
-  supplier: string;
-  action: string;
+  category?: string;
+  stock?: number;
+  minimum?: number;
+  status?: AlertStatus;
+  supplier?: string;
+  action?: string;
 };
 
-const items: LowStockItem[] = [
-  {
-    name: "Surgical Masks (N95)",
-    category: "PPE",
-    stock: 150,
-    minimum: 500,
-    status: "Critical",
-    supplier: "MediCorp Supplies",
-    action: "Restock",
-  },
-  {
-    name: "Saline Solution (500ml)",
-    category: "IV Fluids",
-    stock: 45,
-    minimum: 100,
-    status: "Low",
-    supplier: "PharmaPlus Ltd.",
-    action: "Restock",
-  },
-  {
-    name: "Lidocaine 2%",
-    category: "Anesthetics",
-    stock: 0,
-    minimum: 50,
-    status: "Out of Stock",
-    supplier: "Apex Medical",
-    action: "Ordered",
-  },
-  {
-    name: "Syringes (10ml)",
-    category: "Consumables",
-    stock: 210,
-    minimum: 300,
-    status: "Low",
-    supplier: "MediCorp Supplies",
-    action: "Restock",
-  },
-];
-
-const statusClass: Record<AlertStatus, string> = {
-  Critical: "bg-red-50 text-red-700 ring-red-600/20",
-  Low: "bg-amber-50 text-amber-700 ring-amber-600/20",
-  "Out of Stock": "bg-slate-900 text-white ring-slate-900/20",
-  Ordered: "bg-blue-50 text-blue-700 ring-blue-600/20",
-};
+import { useEffect, useState } from "react";
 
 export default function LowStockAlertsPage() {
+  const [items, setItems] = useState<LowStockItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [criticalLevelCount, setCriticalLevelCount] = useState(0);
+  const [outOfStockCount, setOutOfStockCount] = useState(0);
+  useEffect(() => {
+    fetch("/api/inventory")
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        const rows = Array.isArray(data) ? data : (data as Record<string, unknown>)?.value || [];
+        const safeRows = Array.isArray(rows) ? rows : [];
+        const low = safeRows
+          .map((r) => {
+            const row = r as Record<string, unknown>;
+            const stock = Number(row.stock || 0);
+            const minimum = Number(row.minimum || 0);
+            const status = stock === 0 ? "Out of Stock" : stock < minimum ? "Low" : "Ordered";
+            return {
+              name: String(row.name ?? "Unknown"),
+              category: String(row.category ?? ""),
+              stock,
+              minimum,
+              supplier: String(row.supplier ?? ""),
+              action: stock < minimum ? "Restock" : "",
+              status: status as AlertStatus,
+            };
+          })
+          .filter((i) => typeof i.minimum === "number" && i.minimum > 0 && i.stock! <= i.minimum!);
+
+        setItems(low);
+
+        // Compute summary counts from filtered items
+        const outOfStock = low.filter((i) => i.stock === 0).length;
+        const lowStock = low.filter((i) => i.status === "Low").length;
+        const critical = low.filter((i) => (i.stock ?? 0) < ((i.minimum ?? 1) * 0.25)).length;
+
+        setOutOfStockCount(outOfStock);
+        setLowStockCount(lowStock);
+        setCriticalLevelCount(critical);
+      })
+      .catch(() => {
+        setItems([]);
+        setOutOfStockCount(0);
+        setLowStockCount(0);
+        setCriticalLevelCount(0);
+      });
+  }, []);
+
+  const statusClass: Record<AlertStatus, string> = {
+    Critical: "bg-red-50 text-red-700 ring-red-600/20",
+    Low: "bg-amber-50 text-amber-700 ring-amber-600/20",
+    "Out of Stock": "bg-slate-900 text-white ring-slate-900/20",
+    Ordered: "bg-blue-50 text-blue-700 ring-blue-600/20",
+  };
+
+  const getWidthClass = (value: number): string => {
+    if (value <= 0) return "w-0";
+    if (value <= 25) return "w-1/4";
+    if (value <= 50) return "w-1/2";
+    if (value <= 75) return "w-3/4";
+    return "w-full";
+  };
   return (
     <>
       <Head>
         <title>Low Stock Alerts - MediStock</title>
       </Head>
 
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="relative mx-auto max-w-7xl space-y-6">
+        <Link
+          href="/inventory"
+          className="absolute -left-14 -top-1 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-white text-2xl font-bold text-blue-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          aria-label="Back to inventory dashboard"
+          title="Back to Inventory"
+        >
+          ←
+        </Link>
+
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
@@ -106,7 +133,7 @@ export default function LowStockAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Low Stock
                 </p>
-                <p className="mt-2 text-3xl font-bold text-red-600">42</p>
+                <p className="mt-2 text-3xl font-bold text-red-600">{lowStockCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   +5 since yesterday
                 </p>
@@ -124,7 +151,7 @@ export default function LowStockAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Critical Levels
                 </p>
-                <p className="mt-2 text-3xl font-bold text-amber-600">18</p>
+                <p className="mt-2 text-3xl font-bold text-amber-600">{criticalLevelCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Requires immediate attention
                 </p>
@@ -142,7 +169,7 @@ export default function LowStockAlertsPage() {
                 <p className="text-sm font-semibold text-slate-500">
                   Out of Stock
                 </p>
-                <p className="mt-2 text-3xl font-bold text-slate-950">3</p>
+                <p className="mt-2 text-3xl font-bold text-slate-950">{outOfStockCount}</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Pending supplier delivery
                 </p>
@@ -171,6 +198,8 @@ export default function LowStockAlertsPage() {
               <input
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
                 placeholder="Search alerts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
@@ -197,11 +226,16 @@ export default function LowStockAlertsPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 bg-white">
-                {items.map((item) => {
-                  const percentage = Math.min(
-                    100,
-                    Math.round((item.stock / item.minimum) * 100)
-                  );
+                {items
+                  .filter(
+                    (item) =>
+                      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      item.category?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((item) => {
+                  const stock = Number(item.stock ?? 0);
+                  const minimum = Number(item.minimum ?? 1);
+                  const percentage = Math.min(100, Math.round((stock / minimum) * 100));
 
                   return (
                     <tr key={item.name} className="hover:bg-slate-50">
@@ -227,12 +261,12 @@ export default function LowStockAlertsPage() {
                             <div
                               className={[
                                 "h-full rounded-full",
+                                getWidthClass(percentage),
                                 item.status === "Critical" ||
                                 item.status === "Out of Stock"
                                   ? "bg-red-500"
                                   : "bg-amber-500",
                               ].join(" ")}
-                              style={{ width: `${percentage}%` }}
                             />
                           </div>
                         </div>
@@ -242,7 +276,7 @@ export default function LowStockAlertsPage() {
                         <span
                           className={[
                             "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
-                            statusClass[item.status],
+                            statusClass[(item.status ?? "Low") as AlertStatus],
                           ].join(" ")}
                         >
                           {item.status}
@@ -260,7 +294,8 @@ export default function LowStockAlertsPage() {
                       </td>
                     </tr>
                   );
-                })}
+                })
+                }
               </tbody>
             </table>
           </div>
