@@ -363,3 +363,23 @@ export function MailIcon(props: IconProps) {
   );
 }
 
+export const FilterIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M3 4h18l-7 8v6l-4 2v-8L3 4z" />
+  </svg>
+);
+
+export const CalendarIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M8 7V3m8 4V3M4 11h16M4 19h16M5 7h14a2 2 0 012 2v10H3V9a2 2 0 012-2z" />
+  </svg>
+);
+
+export const ImportIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+  </svg>
+);
