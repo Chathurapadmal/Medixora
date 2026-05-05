@@ -20,7 +20,7 @@ const navItems = [
   { label: "Doctors", icon: DoctorsIcon },
   { label: "Appointments", icon: AppointmentsIcon },
   { label: "Medical Records", icon: RecordsIcon },
-  { label: "Inventory", icon: InventoryIcon },
+  { label: "Inventory", icon: InventoryIcon, href: "/inventory" },
   { label: "Billing", icon: BillingIcon },
   { label: "Suppliers", icon: SuppliersIcon },
   { label: "Reports", icon: ReportsIcon },
@@ -42,10 +42,10 @@ export default function Sidebar() {
       </div>
 
       <nav className="px-3 flex flex-col gap-1.5">
-        {navItems.map(({ label, icon: Icon, active }) => (
+        {navItems.map(({ label, icon: Icon, active, href = "#" }) => (
           <Link
             key={label}
-            href="#"
+            href={href}
             className={[
               "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors",
               active

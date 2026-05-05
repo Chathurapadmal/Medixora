@@ -12,6 +12,8 @@ import {
   WarningSmallIcon,
 } from "@/components/dashboard-icons";
 import type { ComponentType } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
 const stats = [
   {
@@ -123,13 +125,44 @@ function MetricCard({
 }
 
 export default function Home() {
+    const router = useRouter();
+    const [user, setUser] = useState<{ email: string } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      try {
+        // Decode token: Base64 of "userId:email"
+        const decoded = Buffer.from(token, "base64").toString("utf-8");
+        const [, email] = decoded.split(":");
+        setUser({ email });
+      } catch (err) {
+        console.error("Failed to decode token:", err);
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    }, [router]);
+
+    if (loading) {
+      return <div className="mx-auto max-w-[1280px] space-y-6 p-6">Loading...</div>;
+    }
+
+    if (!user) {
+      return null;
+    }
   return (
     <div className="mx-auto max-w-[1280px] space-y-6">
       <div className="flex flex-col gap-4 rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] lg:p-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-slate-900">Dashboard Overview</h1>
-            <p className="mt-1 text-[14px] text-slate-500">Welcome back, Dr. Jenkins. Here is today&apos;s summary.</p>
+            <p className="mt-1 text-[14px] text-slate-500">Welcome back, {user.email}. Here is today&apos;s summary.</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
