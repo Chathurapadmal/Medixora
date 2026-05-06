@@ -6,6 +6,7 @@ type ResponseData = {
   success?: boolean;
   message: string;
   userId?: number;
+  username?: string;
   error?: string;
 };
 
@@ -17,10 +18,11 @@ export default async function handler(
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const { email, password, fullName, role, department, phone } = req.body;
+  const { email, password, username, fullName, role } = req.body;
+  const resolvedUsername = username || fullName;
 
   // Validate required fields
-  if (!email || !password || !fullName || !role) {
+  if (!email || !password || !resolvedUsername || !role) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
@@ -40,11 +42,15 @@ export default async function handler(
   try {
     const pool = await getConnection();
 
-    // Check if user already exists
+    // Check if user already exists directly against dbo.users
     const userExists = await pool
       .request()
       .input("email", sql.NVarChar, email)
-      .execute("dbo.sp_GetUserByEmail");
+      .query(`
+        SELECT user_id
+        FROM dbo.users
+        WHERE email = @email
+      `);
 
     if (userExists.recordset.length > 0) {
       return res.status(409).json({ message: "Email already registered" });
@@ -53,23 +59,27 @@ export default async function handler(
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user through stored procedure
+    // Insert new user directly into dbo.users
     const result = await pool
       .request()
-      .input("username", sql.NVarChar, fullName)
+      .input("username", sql.NVarChar, resolvedUsername)
       .input("email", sql.NVarChar, email)
       .input("password_hash", sql.NVarChar, hashedPassword)
       .input("role", sql.NVarChar, role)
       .input("status", sql.NVarChar, "active")
-      .output("user_id", sql.Int)
-      .execute("dbo.sp_RegisterUser");
+      .query(`
+        INSERT INTO dbo.users (username, email, password_hash, [role], status)
+        OUTPUT INSERTED.user_id
+        VALUES (@username, @email, @password_hash, @role, @status)
+      `);
 
-    const userId = result.output.user_id;
+    const userId = result.recordset[0]?.user_id;
 
     res.status(201).json({
       success: true,
       message: "Registration successful",
       userId,
+      username: resolvedUsername,
     });
   } catch (error: any) {
     console.error("Registration error:", error?.message || error);
