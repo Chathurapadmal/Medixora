@@ -2,86 +2,46 @@ import Head from "next/head";
 import Link from "next/link";
 import {
   MedicineIcon,
+  MoreIcon,
   PlusIcon,
   SearchIcon,
 } from "../../components/dashboard-icons";
+import { useEffect, useMemo, useState } from "react";
 
 type StockStatus = "In Stock" | "Low Stock" | "Out of Stock" | "Expired";
 
 type InventoryItem = {
   id: string;
   name: string;
-  category: string;
-  stock: string;
-  price: string;
-  expiryDate: string;
-  supplier: string;
-  status: StockStatus;
+  category?: string;
+  stock?: number | string;
+  minimum?: number;
+  price?: string | number;
+  expiryDate?: string;
+  supplier?: string;
+  status?: StockStatus;
+  batchNo?: string;
+  description?: string;
 };
 
-const inventoryItems: InventoryItem[] = [
-  {
-    id: "MED-001",
-    name: "Amoxicillin 500mg",
-    category: "Antibiotics",
-    stock: "1,250",
-    price: "$12.50",
-    expiryDate: "2025-10-15",
-    supplier: "PharmaCorp Inc.",
-    status: "In Stock",
-  },
-  {
-    id: "MED-042",
-    name: "Ibuprofen 400mg",
-    category: "Analgesics",
-    stock: "45",
-    price: "$8.20",
-    expiryDate: "2024-08-22",
-    supplier: "MediSupply Ltd.",
-    status: "Low Stock",
-  },
-  {
-    id: "MED-088",
-    name: "Lisinopril 10mg",
-    category: "Cardiovascular",
-    stock: "0",
-    price: "$15.00",
-    expiryDate: "2026-01-10",
-    supplier: "HealthCare Bio",
-    status: "Out of Stock",
-  },
-  {
-    id: "MED-105",
-    name: "Diazepam 5mg",
-    category: "Neurological",
-    stock: "210",
-    price: "$22.50",
-    expiryDate: "2023-11-01",
-    supplier: "Global Pharma",
-    status: "Expired",
-  },
-];
+type InventoryFilterStatus = "All Statuses" | StockStatus;
 
-const statusStyles: Record<StockStatus, string> = {
-  "In Stock": "bg-green-300 text-green-700 ring-green-600/20",
-  "Low Stock": "bg-orange-300 text-orange-700 ring-orange-600/20",
-  "Out of Stock": "bg-red-200 text-red-700 ring-red-600/20",
-  "Expired": "bg-red-600 text-white ring-red-600/20",
-};
+function normalizeStatus(status?: string): StockStatus {
+  if (status === "Available" || status === "In Stock") return "In Stock";
+  if (status === "Low Stock") return "Low Stock";
+  if (status === "Out of Stock") return "Out of Stock";
+  return "Expired";
+}
 
 export default function InventoryPage() {
-<<<<<<< Updated upstream
-=======
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [statusFilter, setStatusFilter] =
-    useState<InventoryFilterStatus>("All Statuses");
+  const [statusFilter, setStatusFilter] = useState<InventoryFilterStatus>("All Statuses");
 
   useEffect(() => {
     let mounted = true;
-
     fetch("/api/inventory")
       .then((r) => r.json())
       .then((data) => {
@@ -101,7 +61,7 @@ export default function InventoryPage() {
     "In Stock": "bg-green-300 text-green-700 ring-green-600/20",
     "Low Stock": "bg-orange-300 text-orange-700 ring-orange-600/20",
     "Out of Stock": "bg-red-200 text-red-700 ring-red-600/20",
-    Expired: "bg-red-600 text-white ring-red-600/20",
+    "Expired": "bg-red-600 text-white ring-red-600/20",
   };
 
   const normalizedItems = useMemo(
@@ -144,25 +104,17 @@ export default function InventoryPage() {
   }, [categoryFilter, normalizedItems, searchTerm, statusFilter]);
 
   const totalMedicines = normalizedItems.length;
-
   const criticalLevels = normalizedItems.filter((item) => {
     const stock = Number(item.stock ?? 0);
     const minimum = Number(item.minimum ?? 0);
     return stock > 0 && stock < minimum;
   }).length;
-
-  const expiredItems = normalizedItems.filter(
-    (item) => item.status === "Expired"
-  ).length;
-
-  const outOfStockItems = normalizedItems.filter(
-    (item) => Number(item.stock ?? 0) <= 0
-  ).length;
+  const expiredItems = normalizedItems.filter((item) => item.status === "Expired").length;
+  const outOfStockItems = normalizedItems.filter((item) => Number(item.stock ?? 0) <= 0).length;
 
   const showingFrom = filteredItems.length > 0 ? 1 : 0;
   const showingTo = filteredItems.length;
 
->>>>>>> Stashed changes
   return (
     <>
       <Head>
@@ -199,24 +151,11 @@ export default function InventoryPage() {
               <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
                 <MedicineIcon className="h-5 w-5" />
               </div>
-
               <div>
                 <p className="text-sm font-medium text-slate-500">
                   Total Medicines
                 </p>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                <p className="text-2xl font-bold text-slate-950">248</p>
-=======
-                <p className="text-2xl font-bold text-slate-950">
-                  {totalMedicines}
-                </p>
->>>>>>> Stashed changes
-=======
-                <p className="text-2xl font-bold text-slate-950">
-                  {totalMedicines}
-                </p>
->>>>>>> Stashed changes
+                <p className="text-2xl font-bold text-slate-950">{totalMedicines}</p>
               </div>
             </div>
           </div>
@@ -225,25 +164,10 @@ export default function InventoryPage() {
             href="/inventory/low_stock_alerts"
             className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-amber-300 hover:bg-amber-100"
           >
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-            <p className="text-sm font-medium text-slate-500">Low Stock</p>
-            <p className="mt-2 text-2xl font-bold text-amber-600">42</p>
-=======
-=======
->>>>>>> Stashed changes
-            <p className="text-sm font-medium text-slate-500">
-              Critical Levels
-            </p>
-            <p className="mt-2 text-2xl font-bold text-amber-600">
-              {criticalLevels + outOfStockItems}
-            </p>
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+            <p className="text-sm font-medium text-slate-500">Critical Levels</p>
+            <p className="mt-2 text-2xl font-bold text-amber-600">{criticalLevels + outOfStockItems}</p>
             <p className="mt-1 text-sm text-slate-500">
-              Items below minimum threshold
+              Low stock and out of stock items
             </p>
           </Link>
 
@@ -252,19 +176,7 @@ export default function InventoryPage() {
             className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-red-300 hover:bg-red-100"
           >
             <p className="text-sm font-medium text-slate-500">Expired Items</p>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-            <p className="mt-2 text-2xl font-bold text-red-600">24</p>
-=======
-            <p className="mt-2 text-2xl font-bold text-red-600">
-              {expiredItems}
-            </p>
->>>>>>> Stashed changes
-=======
-            <p className="mt-2 text-2xl font-bold text-red-600">
-              {expiredItems}
-            </p>
->>>>>>> Stashed changes
+            <p className="mt-2 text-2xl font-bold text-red-600">{expiredItems}</p>
             <p className="mt-1 text-sm text-slate-500">
               Requires disposal protocol
             </p>
@@ -282,6 +194,8 @@ export default function InventoryPage() {
                 <input
                   className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                   placeholder="Search by name or ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </label>
@@ -290,11 +204,14 @@ export default function InventoryPage() {
               <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
                 Category
               </span>
-              <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500">
-                <option>All Categories</option>
-                <option>Analgesics</option>
-                <option>Antibiotics</option>
-                <option>Cardiovascular</option>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                {categoryOptions.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
               </select>
             </label>
 
@@ -302,17 +219,11 @@ export default function InventoryPage() {
               <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
                 Stock Status
               </span>
-<<<<<<< Updated upstream
-              <select className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500">
-=======
               <select
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500"
                 value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as InventoryFilterStatus)
-                }
+                onChange={(e) => setStatusFilter(e.target.value as InventoryFilterStatus)}
               >
->>>>>>> Stashed changes
                 <option>All Statuses</option>
                 <option>In Stock</option>
                 <option>Low Stock</option>
@@ -341,6 +252,7 @@ export default function InventoryPage() {
                     "Expiry Date",
                     "Supplier",
                     "Status",
+                    "Actions",
                   ].map((header) => (
                     <th
                       key={header}
@@ -353,85 +265,52 @@ export default function InventoryPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100 bg-white">
-<<<<<<< Updated upstream
-                {inventoryItems.map((item) => (
-                  <tr key={item.id} className="transition hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-500">
-                      {item.id}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                      {item.name}
-=======
                 {loading ? (
                   <tr>
-                    <td
-                      colSpan={8}
-                      className="px-4 py-8 text-center text-sm text-slate-500"
-                    >
+                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
                       Loading...
                     </td>
                   </tr>
                 ) : filteredItems.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={8}
-                      className="px-4 py-8 text-center text-sm text-slate-500"
-                    >
+                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
                       No inventory items match the selected filters.
->>>>>>> Stashed changes
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.category}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                      {item.stock}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.price}
-                    </td>
-
-                    <td
-                      className={[
-                        "whitespace-nowrap px-4 py-4 text-sm",
-                        item.status === "Expired"
-                          ? "font-semibold text-red-600"
-                          : "text-slate-600",
-                      ].join(" ")}
-                    >
-                      {item.expiryDate}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.supplier}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4">
-                      <span
-                        className={[
-                          "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
-                          statusStyles[item.status],
-                        ].join(" ")}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-
-<<<<<<< Updated upstream
-                    <td className="whitespace-nowrap px-4 py-4 text-right">
-                      <button
-                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                        aria-label={`Actions for ${item.name}`}
-                      >
-                        <MoreIcon className="h-5 w-5" />
-                      </button>
                     </td>
                   </tr>
-                ))}
-=======
+                ) : (
+                  filteredItems.map((item) => (
+                    <tr key={item.id} className="transition hover:bg-slate-50">
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-500">
+                        {item.id}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
+                        {item.name}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {item.category}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
+                        {String(item.stock ?? "-")}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {String(item.price ?? "-")}
+                      </td>
+
+                      <td
+                        className={[
+                          "whitespace-nowrap px-4 py-4 text-sm",
+                          item.status === "Expired"
+                            ? "font-semibold text-red-600"
+                            : "text-slate-600",
+                        ].join(" ")}
+                      >
+                        {item.expiryDate ?? "-"}
+                      </td>
+
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                         {item.supplier ?? "-"}
                       </td>
@@ -446,27 +325,25 @@ export default function InventoryPage() {
                           {item.status ?? "-"}
                         </span>
                       </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-right">
+                        <button
+                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          aria-label={`Actions for ${item.name}`}
+                        >
+                          <MoreIcon className="h-5 w-5" />
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
->>>>>>> Stashed changes
               </tbody>
             </table>
           </div>
 
           <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-              Showing 1 to 4 of 248 entries
-=======
-              Showing {showingFrom} to {showingTo} of {filteredItems.length}{" "}
-              entries
->>>>>>> Stashed changes
-=======
-              Showing {showingFrom} to {showingTo} of {filteredItems.length}{" "}
-              entries
->>>>>>> Stashed changes
+              Showing {showingFrom} to {showingTo} of {filteredItems.length} entries
             </p>
 
             <div className="flex gap-2">

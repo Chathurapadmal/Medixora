@@ -1,7 +1,9 @@
-import type { ReactNode } from "react";
+import type { GetServerSideProps } from "next";
+import { useState, type FormEvent, type ReactNode } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { MedicineIcon, PlusIcon } from "../../components/dashboard-icons";
+import { getConnection } from "../../lib/db";
 
 function Field({
   label,
@@ -25,10 +27,22 @@ function Field({
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10";
 
-<<<<<<< Updated upstream
-export default function AddMedicinePage() {
-=======
-type Supplier = { id?: number; name: string };
+async function getNextMedicineCode(pool: Awaited<ReturnType<typeof getConnection>>) {
+  const result = await pool.request().query(`
+    SELECT MAX(TRY_CAST(RIGHT(item_code, 3) AS INT)) AS maxCode
+    FROM inventory
+    WHERE item_code LIKE 'MED-%'
+  `);
+
+  const maxCode = Number(result.recordset?.[0]?.maxCode ?? 0);
+  return `MED-${String(maxCode + 1).padStart(3, "0")}`;
+}
+
+type AddMedicinePageProps = {
+  suppliers: string[];
+  categories: string[];
+  defaultCode: string;
+};
 
 type MedicineForm = {
   name: string;
@@ -41,37 +55,71 @@ type MedicineForm = {
   expiryDate: string;
 };
 
-export default function AddMedicinePage() {
-  const [suppliers, setSuppliers] = useState<string[]>([]);
+export const getServerSideProps: GetServerSideProps<AddMedicinePageProps> =
+  async () => {
+    try {
+      const pool = await getConnection();
+      const [supplierResult, categoryResult] = await Promise.all([
+        pool.request().query(`
+          SELECT supplier_name AS name
+          FROM suppliers
+          ORDER BY supplier_name
+        `),
+        pool.request().query(`
+          SELECT DISTINCT category AS name
+          FROM inventory
+          WHERE category IS NOT NULL
+            AND LTRIM(RTRIM(category)) <> ''
+          ORDER BY category
+        `),
+      ]);
+
+      const suppliers = (supplierResult.recordset ?? [])
+        .map((row: Record<string, unknown>) => String(row.name ?? ""))
+        .filter(Boolean);
+
+      const categories = (categoryResult.recordset ?? [])
+        .map((row: Record<string, unknown>) => String(row.name ?? ""))
+        .filter(Boolean);
+
+      const defaultCode = await getNextMedicineCode(pool);
+
+      return {
+        props: {
+          suppliers,
+          categories,
+          defaultCode,
+        },
+      };
+    } catch (error) {
+      console.error("/inventory/add_medicine SSR error", error);
+      return {
+        props: {
+          suppliers: [],
+          categories: [],
+          defaultCode: "MED-001",
+        },
+      };
+    }
+  };
+
+export default function AddMedicinePage({
+  suppliers,
+  categories = [],
+  defaultCode,
+}: AddMedicinePageProps) {
   const [form, setForm] = useState<MedicineForm>({
     name: "",
     category: "",
     supplier: "",
-    code: "",
+    code: defaultCode,
     quantity: 0,
     minimum: 0,
     price: "",
     expiryDate: "",
   });
 
-  useEffect(() => {
-    fetch("/api/suppliers")
-      .then((r) => r.json())
-      .then((data: unknown) => {
-        const safeData = Array.isArray(data) ? data : [];
-<<<<<<< Updated upstream
-=======
-        // suppliers API may return objects or strings
->>>>>>> Stashed changes
-        const names = safeData.map((s) =>
-          typeof s === "string" ? s : (s as Supplier).name
-        );
-        setSuppliers(names as string[]);
-      })
-      .catch(() => setSuppliers([]));
-  }, []);
-
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     await fetch("/api/inventory", {
@@ -83,7 +131,6 @@ export default function AddMedicinePage() {
     location.href = "/inventory";
   }
 
->>>>>>> Stashed changes
   return (
     <>
       <Head>
@@ -128,7 +175,7 @@ export default function AddMedicinePage() {
           </div>
         </div>
 
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center gap-3">
               <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
@@ -150,13 +197,12 @@ export default function AddMedicinePage() {
                 <input
                   className={inputClass}
                   placeholder="e.g. Amoxicillin 500mg"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
               </Field>
 
               <Field label="Category" required>
-<<<<<<< Updated upstream
-                <select className={inputClass} defaultValue="">
-=======
                 <select
                   className={inputClass}
                   aria-label="Category"
@@ -165,22 +211,26 @@ export default function AddMedicinePage() {
                     setForm({ ...form, category: e.target.value })
                   }
                 >
->>>>>>> Stashed changes
                   <option value="" disabled>
                     Select Category
                   </option>
-                  <option>Antibiotics</option>
-                  <option>Analgesics</option>
-                  <option>Antipyretics</option>
-                  <option>Vaccines</option>
-                  <option>Supplements</option>
+                  {categories.length > 0 ? (
+                    categories.map((category) => (
+                      <option key={category}>{category}</option>
+                    ))
+                  ) : (
+                    <>
+                      <option>Antibiotics</option>
+                      <option>Analgesics</option>
+                      <option>Antipyretics</option>
+                      <option>Vaccines</option>
+                      <option>Supplements</option>
+                    </>
+                  )}
                 </select>
               </Field>
 
               <Field label="Primary Supplier" required>
-<<<<<<< Updated upstream
-                <select className={inputClass} defaultValue="">
-=======
                 <select
                   className={inputClass}
                   aria-label="Primary Supplier"
@@ -189,37 +239,31 @@ export default function AddMedicinePage() {
                     setForm({ ...form, supplier: e.target.value })
                   }
                 >
->>>>>>> Stashed changes
                   <option value="" disabled>
                     Select Supplier
                   </option>
-                  <option>PharmaGlobal Inc.</option>
-                  <option>MedSupply Co.</option>
-                  <option>Health Logistics</option>
+                  {suppliers.length > 0 ? (
+                    suppliers.map((supplier) => (
+                      <option key={supplier}>{supplier}</option>
+                    ))
+                  ) : (
+                    <>
+                      <option>PharmaGlobal Inc.</option>
+                      <option>MedSupply Co.</option>
+                      <option>Health Logistics</option>
+                    </>
+                  )}
                 </select>
               </Field>
 
-              <Field label="Medicine Code">
+              <Field label="Medicine Code" required>
                 <input
                   className={inputClass}
-                  placeholder="Auto generated or enter manually"
+                  value={form.code}
+                  readOnly
+                  title="Auto-generated medicine code"
                 />
               </Field>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-              <div className="md:col-span-2">
-                <Field label="Description & Dosage Guidelines">
-                  <textarea
-                    className={`${inputClass} min-h-28 resize-y`}
-                    placeholder="Add dosage guidelines, handling notes, or safety instructions..."
-                  />
-                </Field>
-              </div>
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
             </div>
           </section>
 
@@ -246,16 +290,10 @@ export default function AddMedicinePage() {
                     className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
                     placeholder="500"
                     type="number"
-<<<<<<< Updated upstream
-=======
                     value={form.quantity}
                     onChange={(e) =>
                       setForm({ ...form, quantity: Number(e.target.value) })
                     }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
                   />
                   <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
                     Units
@@ -269,16 +307,10 @@ export default function AddMedicinePage() {
                     className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
                     placeholder="100"
                     type="number"
-<<<<<<< Updated upstream
-=======
                     value={form.minimum}
                     onChange={(e) =>
                       setForm({ ...form, minimum: Number(e.target.value) })
                     }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
                   />
                   <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
                     Units
@@ -299,42 +331,15 @@ export default function AddMedicinePage() {
                     placeholder="12.50"
                     type="number"
                     step="0.01"
-<<<<<<< Updated upstream
-=======
                     value={form.price}
                     onChange={(e) =>
                       setForm({ ...form, price: e.target.value })
                     }
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
                   />
                 </div>
               </Field>
 
               <Field label="Expiry Date" required>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                <input className={inputClass} type="date" />
-              </Field>
-
-              <Field label="Storage Location">
-                <select className={inputClass} defaultValue="">
-                  <option value="" disabled>
-                    Select Aisle / Shelf
-                  </option>
-                  <option>Aisle A - Shelf 1 (Cold Storage)</option>
-                  <option>Aisle B - Shelf 3</option>
-                  <option>Aisle C - Shelf 2 (Secure)</option>
-                </select>
-              </Field>
-
-              <Field label="Batch Number">
-                <input className={inputClass} placeholder="e.g. AMX-442-X1" />
-=======
-=======
->>>>>>> Stashed changes
                 <input
                   className={inputClass}
                   type="date"
@@ -344,10 +349,6 @@ export default function AddMedicinePage() {
                     setForm({ ...form, expiryDate: e.target.value })
                   }
                 />
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
               </Field>
             </div>
           </section>
