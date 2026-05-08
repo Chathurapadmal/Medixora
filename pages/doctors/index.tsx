@@ -4,9 +4,7 @@ import { useEffect, useState } from "react";
 
 type Doctor = {
   id: string;
-  user_id?: number;
-  first_name?: string;
-  last_name?: string;
+  name?: string;
   specialization?: string;
   qualifications?: string;
   experienceYears?: number;
@@ -14,6 +12,9 @@ type Doctor = {
   email?: string;
   consultationFee?: string | number;
   availability?: string;
+  shiftStart?: string;
+  shiftEnd?: string;
+  status?: string;
 };
 
 export default function DoctorsPage() {
@@ -85,6 +86,7 @@ export default function DoctorsPage() {
                       "Fee",
                       "Experience",
                       "Availability",
+                      "Status",
                     ].map((h) => (
                       <th
                         key={h}
@@ -104,7 +106,7 @@ export default function DoctorsPage() {
                       </td>
 
                       <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                        {d.first_name} {d.last_name}
+                        {d.name ?? "-"}
                       </td>
 
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
@@ -129,6 +131,21 @@ export default function DoctorsPage() {
 
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
                         {d.availability ?? "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span
+                          className={[
+                            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+                            d.status === "Active"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : d.status === "On Leave"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-slate-100 text-slate-600",
+                          ].join(" ")}
+                        >
+                          {d.status ?? "Active"}
+                        </span>
                       </td>
                     </tr>
                   ))}
