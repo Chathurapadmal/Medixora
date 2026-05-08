@@ -251,3 +251,135 @@ export function WarningSmallIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function EyeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+      <circle cx="12" cy="12" r="3" />
+    </Icon>
+  );
+}
+
+export function EditIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 20h4l10-10-4-4L4 16v4Z" />
+      <path d="M13 7l4 4" />
+    </Icon>
+  );
+}
+
+export function DeleteIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M6 6l1 14h10l1-14" />
+      <path d="M10 11v6M14 11v6" />
+    </Icon>
+  );
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 6l6 6-6 6" />
+    </Icon>
+  );
+}
+
+export function UserIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" />
+      <path d="M4 20a8 8 0 0 1 16 0" />
+    </Icon>
+  );
+}
+
+export function PhoneIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.6-1.1a2 2 0 0 1 2.1-.4c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9Z" />
+    </Icon>
+  );
+}
+
+export function ShieldIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4Z" />
+    </Icon>
+  );
+}
+
+export function UsersIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M16 14a4 4 0 1 0-8 0" />
+      <path d="M12 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z" />
+      <path d="M6 20a6 6 0 0 1 12 0" />
+    </Icon>
+  );
+}
+
+export function UserPlusIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z" />
+      <path d="M19 21a7 7 0 0 0-14 0" />
+      <path d="M19 8v6M16 11h6" />
+    </Icon>
+  );
+}
+
+export function ContactIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M21 15v4a2 2 0 0 1-2 2h-1" />
+      <path d="M3 15v4a2 2 0 0 0 2 2h1" />
+      <path d="M7 10a5 5 0 0 1 10 0v5" />
+    </Icon>
+  );
+}
+
+export function PrintIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 9V4h12v5" />
+      <path d="M6 18h12v2H6z" />
+      <path d="M6 14h12" />
+    </Icon>
+  );
+}
+
+export function MailIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 6h16v12H4z" />
+      <path d="M4 6l8 6 8-6" />
+    </Icon>
+  );
+}
+
+export const FilterIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M3 4h18l-7 8v6l-4 2v-8L3 4z" />
+  </svg>
+);
+
+export const CalendarIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M8 7V3m8 4V3M4 11h16M4 19h16M5 7h14a2 2 0 012 2v10H3V9a2 2 0 012-2z" />
+  </svg>
+);
+
+export const ImportIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+  </svg>
+);
