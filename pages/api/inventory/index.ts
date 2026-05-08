@@ -1,6 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getConnection, sql } from "../../../lib/db";
 
+async function getNextMedicineCode() {
+  const pool = await getConnection();
+  const result = await pool.request().query(`
+    SELECT MAX(TRY_CAST(RIGHT(item_code, 3) AS INT)) AS maxCode
+    FROM inventory
+    WHERE item_code LIKE 'MED-%'
+  `);
+
+  const maxCode = Number(result.recordset?.[0]?.maxCode ?? 0);
+  return `MED-${String(maxCode + 1).padStart(3, "0")}`;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const pool = await getConnection();
@@ -36,7 +48,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       request.input("name", sql.NVarChar, name || null);
       request.input("category", sql.NVarChar, category || null);
       request.input("supplier", sql.NVarChar, supplier || null);
-      request.input("code", sql.NVarChar, code || null);
       request.input("quantity", sql.Int, Number(quantity) || 0);
       request.input("minimum", sql.Int, Number(minimum) || 0);
       request.input("price", sql.Decimal(18, 2), price ? Number(price) : 0);
@@ -50,23 +61,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         );
 
         INSERT INTO inventory
-          (item_code, medicine_name, category, supplier_id, stock_quantity, minimum_stock_level, unit_price, expiry_date, status)
+          (medicine_name, category, supplier_id, stock_quantity, minimum_stock_level, unit_price, expiry_date)
         VALUES
           (
-            @code,
             @name,
             @category,
             @supplierId,
             @quantity,
             @minimum,
             @price,
-            @expiryDate,
-            CASE
-              WHEN @expiryDate IS NOT NULL AND @expiryDate < CAST(GETDATE() AS date) THEN 'Expired'
-              WHEN @quantity <= 0 THEN 'Out of Stock'
-              WHEN @quantity < @minimum THEN 'Low Stock'
-              ELSE 'In Stock'
-            END
+            @expiryDate
           );
 
         SELECT SCOPE_IDENTITY() AS id;
