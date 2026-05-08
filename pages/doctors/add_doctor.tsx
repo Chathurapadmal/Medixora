@@ -1,384 +1,393 @@
+import type { ReactNode } from "react";
+import { useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import {
-  DoctorsIcon,
-  MoreIcon,
-  PlusIcon,
-  SearchIcon,
-} from "../../components/dashboard-icons";
+import { DoctorsIcon, PlusIcon } from "../../components/dashboard-icons";
+
+function Field({
+  label,
+  children,
+  required = false,
+}: {
+  label: string;
+  children: ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-semibold text-slate-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+const inputClass =
+  "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10";
 
 type DoctorStatus = "Active" | "On Leave" | "Inactive";
 
-type Doctor = {
-  id: string;
-  name?: string;
-  specialization?: string;
-  qualifications?: string;
-  experienceYears?: number;
-  phone?: string;
-  email?: string;
-  consultationFee?: string | number;
-  availability?: string;
-  shiftStart?: string;
-  shiftEnd?: string;
-  status?: DoctorStatus;
+type DoctorForm = {
+  name: string;
+  email: string;
+  phone: string;
+  specialization: string;
+  qualification: string;
+  experience: number;
+  fee: string;
+  days: string[];
+  shiftStart: string;
+  shiftEnd: string;
+  status: DoctorStatus;
 };
 
-type DoctorFilterStatus = "All Statuses" | DoctorStatus;
+const weekDays = [
+  { label: "M", value: "Mon" },
+  { label: "T", value: "Tue" },
+  { label: "W", value: "Wed" },
+  { label: "T", value: "Thu" },
+  { label: "F", value: "Fri" },
+  { label: "S", value: "Sat" },
+  { label: "S", value: "Sun" },
+];
 
-export default function DoctorsPage() {
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [specializationFilter, setSpecializationFilter] =
-    useState("All Specializations");
-  const [statusFilter, setStatusFilter] =
-    useState<DoctorFilterStatus>("All Statuses");
+export default function AddDoctorPage() {
+  const [form, setForm] = useState<DoctorForm>({
+    name: "",
+    email: "",
+    phone: "",
+    specialization: "",
+    qualification: "",
+    experience: 0,
+    fee: "",
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    shiftStart: "09:00",
+    shiftEnd: "17:00",
+    status: "Active",
+  });
 
-  useEffect(() => {
-    let mounted = true;
+  const toggleDay = (day: string) => {
+    setForm((current) => {
+      const exists = current.days.includes(day);
 
-    fetch("/api/doctors")
-      .then((r) => r.json())
-      .then((data) => {
-        if (mounted) {
-          setDoctors(Array.isArray(data) ? data : []);
-        }
-      })
-      .catch(() => setDoctors([]))
-      .finally(() => mounted && setLoading(false));
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const statusStyles: Record<DoctorStatus, string> = {
-    Active: "bg-emerald-100 text-emerald-700 ring-emerald-600/20",
-    "On Leave": "bg-amber-100 text-amber-700 ring-amber-600/20",
-    Inactive: "bg-slate-100 text-slate-600 ring-slate-500/20",
+      return {
+        ...current,
+        days: exists
+          ? current.days.filter((item) => item !== day)
+          : [...current.days, day],
+      };
+    });
   };
 
-  const specializationOptions = useMemo(() => {
-    const specializations = new Set(
-      doctors
-        .map((doctor) => doctor.specialization?.trim())
-        .filter((value): value is string => Boolean(value))
-    );
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
 
-    return ["All Specializations", ...Array.from(specializations).sort()];
-  }, [doctors]);
-
-  const filteredDoctors = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-
-    return doctors.filter((doctor) => {
-      const matchesSearch =
-        !query ||
-        [
-          doctor.id,
-          doctor.name,
-          doctor.specialization,
-          doctor.phone,
-          doctor.email,
-          doctor.availability,
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(query));
-
-      const matchesSpecialization =
-        specializationFilter === "All Specializations" ||
-        doctor.specialization === specializationFilter;
-
-      const matchesStatus =
-        statusFilter === "All Statuses" ||
-        (doctor.status ?? "Active") === statusFilter;
-
-      return matchesSearch && matchesSpecialization && matchesStatus;
+    await fetch("/api/doctors", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(form),
     });
-  }, [doctors, searchTerm, specializationFilter, statusFilter]);
 
-  const totalDoctors = doctors.length;
-  const activeDoctors = doctors.filter(
-    (doctor) => (doctor.status ?? "Active") === "Active"
-  ).length;
-  const onLeaveDoctors = doctors.filter(
-    (doctor) => doctor.status === "On Leave"
-  ).length;
-
-  const showingFrom = filteredDoctors.length > 0 ? 1 : 0;
-  const showingTo = filteredDoctors.length;
+    location.href = "/doctors";
+  }
 
   return (
     <>
       <Head>
-        <title>Doctors - MediStock</title>
+        <title>Add Doctor - MediStock</title>
       </Head>
 
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-medium text-blue-600">Doctors</p>
+      <div className="relative mx-auto max-w-6xl space-y-6">
+        <Link
+          href="/doctors"
+          className="absolute -left-14 -top-1 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-white text-2xl font-bold text-blue-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          aria-label="Back to doctors dashboard"
+          title="Back to Doctors"
+        >
+          ←
+        </Link>
 
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-              Doctor Directory
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+              <Link
+                href="/doctors"
+                className="text-blue-600 hover:text-blue-700"
+              >
+                Doctors
+              </Link>
+              <span>/</span>
+              <span>Add Doctor</span>
+            </div>
+
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+              New Profile
             </h1>
 
             <p className="mt-2 text-sm text-slate-500">
-              Manage doctor profiles, specialties, and availability.
+              Add doctor information, professional credentials, availability,
+              and profile status.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/doctors/add_doctor"
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Add Doctor
-            </Link>
+          <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
+            <DoctorsIcon className="h-7 w-7" />
           </div>
         </div>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
-                <DoctorsIcon className="h-5 w-5" />
-              </div>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="rounded-xl bg-blue-50 p-2 text-blue-600">
+                    <DoctorsIcon className="h-5 w-5" />
+                  </div>
 
-              <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Total Doctors
-                </p>
-                <p className="text-2xl font-bold text-slate-950">
-                  {totalDoctors}
-                </p>
-              </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-950">
+                      Personal Information
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Basic profile and contact information.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <Field label="Full Name" required>
+                      <input
+                        className={inputClass}
+                        placeholder="Enter full name"
+                        value={form.name}
+                        onChange={(e) =>
+                          setForm({ ...form, name: e.target.value })
+                        }
+                      />
+                    </Field>
+                  </div>
+
+                  <Field label="Email Address" required>
+                    <input
+                      className={inputClass}
+                      type="email"
+                      placeholder="Enter email address"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                    />
+                  </Field>
+
+                  <Field label="Contact Number" required>
+                    <input
+                      className={inputClass}
+                      type="tel"
+                      placeholder="Enter contact number"
+                      value={form.phone}
+                      onChange={(e) =>
+                        setForm({ ...form, phone: e.target.value })
+                      }
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="rounded-xl bg-emerald-50 p-2 text-emerald-600">
+                    <PlusIcon className="h-5 w-5" />
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-950">
+                      Professional Credentials
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Specialty, qualification, experience, and consultation
+                      fee.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Specialization" required>
+                    <select
+                      className={inputClass}
+                      value={form.specialization}
+                      onChange={(e) =>
+                        setForm({ ...form, specialization: e.target.value })
+                      }
+                    >
+                      <option value="" disabled>
+                        Select specialization
+                      </option>
+                      <option>Cardiology</option>
+                      <option>Neurology</option>
+                      <option>Pediatrics</option>
+                      <option>Orthopedics</option>
+                      <option>General Surgery</option>
+                    </select>
+                  </Field>
+
+                  <Field label="Highest Qualification" required>
+                    <input
+                      className={inputClass}
+                      placeholder="Enter qualification"
+                      value={form.qualification}
+                      onChange={(e) =>
+                        setForm({ ...form, qualification: e.target.value })
+                      }
+                    />
+                  </Field>
+
+                  <Field label="Years of Experience">
+                    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-500/10">
+                      <input
+                        className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={form.experience}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            experience: Number(e.target.value),
+                          })
+                        }
+                      />
+                      <span className="border-l border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
+                        YRS
+                      </span>
+                    </div>
+                  </Field>
+
+                  <Field label="Consultation Fee">
+                    <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-slate-50 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-500/10">
+                      <span className="border-r border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500">
+                        Rs
+                      </span>
+                      <input
+                        className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm outline-none"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={form.fee}
+                        onChange={(e) =>
+                          setForm({ ...form, fee: e.target.value })
+                        }
+                      />
+                    </div>
+                  </Field>
+                </div>
+              </section>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Active Doctors</p>
-            <p className="mt-2 text-2xl font-bold text-emerald-600">
-              {activeDoctors}
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Currently available profiles
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">On Leave</p>
-            <p className="mt-2 text-2xl font-bold text-amber-600">
-              {onLeaveDoctors}
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Temporarily unavailable
-            </p>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_180px_auto] lg:items-end">
-            <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Search Doctors
-              </span>
-
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                <SearchIcon className="h-4 w-4 text-slate-400" />
-                <input
-                  className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-                  placeholder="Search by name, ID, phone, or email..."
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                />
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="mb-5">
+                <h2 className="text-lg font-bold text-slate-950">
+                  Availability
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Working days, shift time, and current profile status.
+                </p>
               </div>
-            </label>
 
-            <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Specialization
-              </span>
+              <div className="space-y-5">
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-slate-700">
+                    Working Days
+                  </p>
 
-              <select
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500"
-                value={specializationFilter}
-                onChange={(event) =>
-                  setSpecializationFilter(event.target.value)
-                }
-              >
-                {specializationOptions.map((option) => (
-                  <option key={option}>{option}</option>
-                ))}
-              </select>
-            </label>
+                  <div className="flex flex-wrap gap-2">
+                    {weekDays.map((day, index) => {
+                      const active = form.days.includes(day.value);
 
-            <label className="block">
-              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
-                Status
-              </span>
+                      return (
+                        <button
+                          key={`${day.value}-${index}`}
+                          type="button"
+                          onClick={() => toggleDay(day.value)}
+                          className={[
+                            "flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold transition",
+                            active
+                              ? "border-blue-600 bg-blue-600 text-white"
+                              : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100",
+                          ].join(" ")}
+                        >
+                          {day.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-              <select
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500"
-                value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value as DoctorFilterStatus)
-                }
-              >
-                <option>All Statuses</option>
-                <option>Active</option>
-                <option>On Leave</option>
-                <option>Inactive</option>
-              </select>
-            </label>
+                <Field label="Shift Start Time">
+                  <input
+                    className={inputClass}
+                    type="time"
+                    value={form.shiftStart}
+                    onChange={(e) =>
+                      setForm({ ...form, shiftStart: e.target.value })
+                    }
+                  />
+                </Field>
 
-            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
-              More Filters
+                <Field label="Shift End Time">
+                  <input
+                    className={inputClass}
+                    type="time"
+                    value={form.shiftEnd}
+                    onChange={(e) =>
+                      setForm({ ...form, shiftEnd: e.target.value })
+                    }
+                  />
+                </Field>
+
+                <div className="border-t border-slate-200 pt-5">
+                  <Field label="Profile Status">
+                    <select
+                      className={inputClass}
+                      value={form.status}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          status: e.target.value as DoctorStatus,
+                        })
+                      }
+                    >
+                      <option>Active</option>
+                      <option>On Leave</option>
+                      <option>Inactive</option>
+                    </select>
+                  </Field>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+            <Link
+              href="/doctors"
+              className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-center text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              Cancel
+            </Link>
+
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Save Profile
             </button>
           </div>
-        </section>
-
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-left">
-              <thead className="bg-slate-50">
-                <tr>
-                  {[
-                    "ID",
-                    "Name",
-                    "Specialization",
-                    "Phone",
-                    "Email",
-                    "Fee",
-                    "Experience",
-                    "Availability",
-                    "Status",
-                    "Actions",
-                  ].map((header) => (
-                    <th
-                      key={header}
-                      className="whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {loading ? (
-                  <tr>
-                    <td
-                      colSpan={10}
-                      className="px-4 py-8 text-center text-sm text-slate-500"
-                    >
-                      Loading doctors...
-                    </td>
-                  </tr>
-                ) : filteredDoctors.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={10}
-                      className="px-4 py-8 text-center text-sm text-slate-500"
-                    >
-                      No doctors match the selected filters.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredDoctors.map((doctor) => {
-                    const status = doctor.status ?? "Active";
-
-                    return (
-                      <tr
-                        key={doctor.id}
-                        className="transition hover:bg-slate-50"
-                      >
-                        <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-slate-500">
-                          {doctor.id}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                          {doctor.name ?? "-"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                          {doctor.specialization ?? "-"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                          {doctor.phone ?? "-"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                          {doctor.email ?? "-"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                          {doctor.consultationFee ?? "-"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                          {doctor.experienceYears ?? "-"} yrs
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                          {doctor.availability ?? "-"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4">
-                          <span
-                            className={[
-                              "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
-                              statusStyles[status],
-                            ].join(" ")}
-                          >
-                            {status}
-                          </span>
-                        </td>
-
-                        <td className="whitespace-nowrap px-4 py-4 text-right">
-                          <button
-                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                            aria-label={`Actions for ${doctor.name ?? doctor.id}`}
-                            type="button"
-                          >
-                            <MoreIcon className="h-5 w-5" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-500">
-              Showing {showingFrom} to {showingTo} of{" "}
-              {filteredDoctors.length} entries
-            </p>
-
-            <div className="flex gap-2">
-              {["1", "2", "3"].map((page) => (
-                <button
-                  key={page}
-                  className={
-                    page === "1"
-                      ? "h-9 w-9 rounded-lg bg-blue-600 text-sm font-semibold text-white"
-                      : "h-9 w-9 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                  }
-                  type="button"
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
+        </form>
       </div>
     </>
   );
