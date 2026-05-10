@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   PlusIcon,
   SearchIcon,
@@ -84,10 +85,14 @@ export default function AppointmentsPage() {
             </p>
           </div>
 
-          <button className="inline-flex items-center gap-2 rounded-xl bg-[#1450d2] px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_20px_rgba(20,80,210,0.20)] transition hover:bg-[#0f43b5]">
+          {/* UPDATED BUTTON */}
+          <Link
+            href="/appointments/bookappointment"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1450d2] px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_20px_rgba(20,80,210,0.20)] transition hover:bg-[#0f43b5]"
+          >
             <PlusIcon className="h-4 w-4" />
             New Appointment
-          </button>
+          </Link>
         </div>
 
         {/* SEARCH + FILTER */}
