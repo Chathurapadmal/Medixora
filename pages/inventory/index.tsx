@@ -341,25 +341,10 @@ export default function InventoryPage() {
             </table>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="border-t border-slate-200 bg-slate-50 px-4 py-4">
             <p className="text-sm text-slate-500">
               Showing {showingFrom} to {showingTo} of {filteredItems.length} entries
             </p>
-
-            <div className="flex gap-2">
-              {["1", "2", "3"].map((page) => (
-                <button
-                  key={page}
-                  className={
-                    page === "1"
-                      ? "h-9 w-9 rounded-lg bg-blue-600 text-sm font-semibold text-white"
-                      : "h-9 w-9 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                  }
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
           </div>
         </section>
       </div>
