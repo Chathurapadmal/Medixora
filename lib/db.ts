@@ -38,9 +38,23 @@ if (connectionString) {
 let pool: sql.ConnectionPool | null = null;
 
 export async function getConnection(): Promise<sql.ConnectionPool> {
-  if (pool) return pool;
+  // Return the cached pool only if it is still connected
+  if (pool?.connected) return pool;
+
+  // If the old pool exists but is no longer connected, clean it up
+  if (pool) {
+    try { await pool.close(); } catch { /* already closed */ }
+    pool = null;
+  }
 
   pool = new sql.ConnectionPool(config);
+
+  // Auto-clear the cached reference when the connection drops unexpectedly
+  pool.on("error", (err) => {
+    console.error("[DB] Pool error — connection will be re-created on next request:", err.message);
+    pool = null;
+  });
+
   await pool.connect();
   return pool;
 }
