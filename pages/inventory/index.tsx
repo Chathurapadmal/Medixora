@@ -6,7 +6,7 @@ import {
   PlusIcon,
   SearchIcon,
 } from "../../components/dashboard-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type StockStatus = "In Stock" | "Low Stock" | "Out of Stock" | "Expired";
 
@@ -40,22 +40,68 @@ export default function InventoryPage() {
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [statusFilter, setStatusFilter] = useState<InventoryFilterStatus>("All Statuses");
 
-  useEffect(() => {
-    let mounted = true;
+  // Action menu
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Restock modal
+  const [restockItem, setRestockItem] = useState<InventoryItem | null>(null);
+  const [restockQty, setRestockQty] = useState("");
+  const [restocking, setRestocking] = useState(false);
+
+  // Delete modal
+  const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  function fetchItems() {
     fetch("/api/inventory")
       .then((r) => r.json())
-      .then((data) => {
-        if (mounted) {
-          setInventoryItems(Array.isArray(data) ? data : []);
-        }
-      })
+      .then((data) => setInventoryItems(Array.isArray(data) ? data : []))
       .catch(() => setInventoryItems([]))
-      .finally(() => mounted && setLoading(false));
+      .finally(() => setLoading(false));
+  }
 
-    return () => {
-      mounted = false;
-    };
+  useEffect(() => {
+    fetchItems();
   }, []);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  async function handleRestock() {
+    if (!restockItem || !restockQty) return;
+    setRestocking(true);
+    try {
+      await fetch("/api/inventory/restock", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: restockItem.id, quantity: Number(restockQty) }),
+      });
+      setRestockItem(null);
+      setRestockQty("");
+      fetchItems();
+    } catch { /* ignore */ }
+    setRestocking(false);
+  }
+
+  async function handleDelete() {
+    if (!deleteItem) return;
+    setDeleting(true);
+    try {
+      await fetch(`/api/inventory/${deleteItem.id}`, { method: "DELETE" });
+      setDeleteItem(null);
+      fetchItems();
+    } catch { /* ignore */ }
+    setDeleting(false);
+  }
 
   const statusStyles: Record<StockStatus, string> = {
     "In Stock": "bg-green-300 text-green-700 ring-green-600/20",
@@ -326,13 +372,36 @@ export default function InventoryPage() {
                         </span>
                       </td>
 
-                      <td className="whitespace-nowrap px-4 py-4 text-right">
+                      <td className="relative whitespace-nowrap px-4 py-4 text-right">
                         <button
                           className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                           aria-label={`Actions for ${item.name}`}
+                          onClick={() => setOpenMenuId(openMenuId === item.id ? null : item.id)}
                         >
                           <MoreIcon className="h-5 w-5" />
                         </button>
+
+                        {openMenuId === item.id && (
+                          <div
+                            ref={menuRef}
+                            className="absolute right-4 top-12 z-20 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                          >
+                            <button
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                              onClick={() => { setRestockItem(item); setRestockQty(""); setOpenMenuId(null); }}
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+                              Restock
+                            </button>
+                            <button
+                              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-red-600 transition hover:bg-red-50"
+                              onClick={() => { setDeleteItem(item); setOpenMenuId(null); }}
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              Remove
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -348,6 +417,55 @@ export default function InventoryPage() {
           </div>
         </section>
       </div>
+
+      {/* ── Restock Modal ── */}
+      {restockItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-slate-950">Restock — {restockItem.name}</h3>
+            <p className="mt-1 text-sm text-slate-500">Current stock: <span className="font-semibold text-slate-700">{String(restockItem.stock ?? 0)}</span></p>
+
+            <label className="mt-4 block">
+              <span className="mb-1 block text-sm font-semibold text-slate-700">Add Quantity</span>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                type="number" min="1" placeholder="e.g. 100"
+                value={restockQty} onChange={(e) => setRestockQty(e.target.value)}
+                autoFocus
+              />
+            </label>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setRestockItem(null)}>Cancel</button>
+              <button className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50" disabled={!restockQty || Number(restockQty) <= 0 || restocking} onClick={handleRestock}>
+                {restocking ? "Restocking…" : "Confirm Restock"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ── */}
+      {deleteItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-red-50 p-2 text-red-600">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+              <h3 className="text-lg font-bold text-slate-950">Remove Medicine</h3>
+            </div>
+            <p className="mt-3 text-sm text-slate-600">Are you sure you want to remove <span className="font-semibold text-slate-900">{deleteItem.name}</span> from the inventory? This action cannot be undone.</p>
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" onClick={() => setDeleteItem(null)}>Cancel</button>
+              <button className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50" disabled={deleting} onClick={handleDelete}>
+                {deleting ? "Removing…" : "Yes, Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
