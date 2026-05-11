@@ -33,7 +33,10 @@ export default async function handler(
     request.input("quantity", sql.Int, addQuantity);
 
     // Build dynamic SET clauses for optional fields
-    const setClauses = ["stock_quantity = stock_quantity + @quantity"];
+    const setClauses = [
+      "stock_quantity = stock_quantity + @quantity",
+      "created_at = GETDATE()",
+    ];
 
     if (unitPrice !== undefined && unitPrice !== "" && unitPrice !== null) {
       request.input("unitPrice", sql.Decimal(18, 2), Number(unitPrice));
@@ -64,6 +67,7 @@ export default async function handler(
         i.minimum_stock_level AS minimum,
         CAST(i.unit_price AS decimal(18,2)) AS price,
         CONVERT(varchar(10), i.expiry_date, 23) AS expiryDate,
+        CONVERT(varchar(10), i.created_at, 23) AS createdAt,
         s.supplier_name      AS supplier
       FROM inventory i
       LEFT JOIN suppliers s ON s.supplier_id = i.supplier_id
