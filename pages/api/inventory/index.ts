@@ -31,7 +31,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             CAST(i.unit_price AS decimal(18,2)) AS price,
             CONVERT(varchar(10), i.expiry_date, 23) AS expiryDate,
             s.supplier_name AS supplier,
-            i.status
+            i.status,
+            CONVERT(varchar(10), i.created_at, 23) AS createdAt
           FROM inventory i
           LEFT JOIN suppliers s ON s.supplier_id = i.supplier_id
           ORDER BY i.medicine_id DESC`

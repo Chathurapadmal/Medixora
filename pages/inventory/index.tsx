@@ -18,6 +18,7 @@ type InventoryItem = {
   minimum?: number;
   price?: string | number;
   expiryDate?: string;
+  createdAt?: string;
   supplier?: string;
   status?: StockStatus;
   batchNo?: string;
@@ -296,6 +297,7 @@ export default function InventoryPage() {
                     "Stock",
                     "Unit Price",
                     "Expiry Date",
+                    "Created",
                     "Supplier",
                     "Status",
                     "Actions",
@@ -313,13 +315,13 @@ export default function InventoryPage() {
               <tbody className="divide-y divide-slate-100 bg-white">
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={10} className="px-4 py-8 text-center text-sm text-slate-500">
                       Loading...
                     </td>
                   </tr>
                 ) : filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={10} className="px-4 py-8 text-center text-sm text-slate-500">
                       No inventory items match the selected filters.
                     </td>
                   </tr>
@@ -355,6 +357,10 @@ export default function InventoryPage() {
                         ].join(" ")}
                       >
                         {item.expiryDate ?? "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-500">
+                        {item.createdAt ?? "-"}
                       </td>
 
                       <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
