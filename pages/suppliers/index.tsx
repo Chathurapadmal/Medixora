@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 interface Supplier {
   supplier_id: number;
@@ -19,6 +20,7 @@ export default function Suppliers() {
   const [total, setTotal] = useState(0);
   const [totalActive, setTotalActive] = useState(0);
   const limit = 10;
+  const router = useRouter();
 
   const fetchSuppliers = async () => {
     setLoading(true);
@@ -76,6 +78,12 @@ export default function Suppliers() {
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Suppliers</h1>
             <p className="text-gray-600 mt-1">Manage medical equipment and pharmaceutical vendors.</p>
           </div>
+          <button 
+            onClick={() => router.push('/suppliers/add')}
+            className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors"
+          >
+            Add Supplier
+          </button>
         </div>
       </div>
 
@@ -126,12 +134,6 @@ export default function Suppliers() {
                 <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 5.707A1 1 0 013 5V3z" clipRule="evenodd" />
               </svg>
               Filter
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              Add Supplier
             </button>
           </div>
 
