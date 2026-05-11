@@ -5,6 +5,7 @@ import {
   MoreIcon,
   PlusIcon,
   SearchIcon,
+  ChevronDownIcon,
 } from "@/components/dashboard-icons";
 
 const records = [
@@ -54,22 +55,11 @@ const records = [
   },
 ];
 
-function MaterialIcon({
-  name,
-  className = "",
-}: {
-  name: string;
-  className?: string;
-}) {
-  return <span className={`material-symbols-outlined ${className}`}>{name}</span>;
-}
-
 export default function MedicalRecordsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-medium text-blue-600">Medical Records</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
             Medical Records
           </h1>
@@ -103,8 +93,10 @@ export default function MedicalRecordsPage() {
             <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
               Search Records
             </span>
+
             <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
               <SearchIcon className="h-4 w-4 text-slate-400" />
+
               <input
                 className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                 placeholder="Search by patient name, ID, or doctor..."
@@ -113,23 +105,27 @@ export default function MedicalRecordsPage() {
             </div>
           </label>
 
+          {/* FIXED DATE RANGE */}
           <label className="block">
             <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
               Date Range
             </span>
+
             <div className="relative">
-              <CalendarIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <select className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pl-9 text-sm text-slate-700 outline-none focus:border-blue-500">
+              <CalendarIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+              <select
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-10 text-sm text-slate-700 outline-none focus:border-blue-500"
+                defaultValue="Last 7 Days"
+              >
                 <option>Last 7 Days</option>
                 <option>Last 30 Days</option>
                 <option>This Month</option>
                 <option>Previous Quarter</option>
                 <option>Custom Range...</option>
               </select>
-              <MaterialIcon
-                name="arrow_drop_down"
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400"
-              />
+
+              <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             </div>
           </label>
 
@@ -181,6 +177,7 @@ export default function MedicalRecordsPage() {
                       >
                         {record.initials}
                       </div>
+
                       <span className="text-sm font-semibold text-slate-950">
                         {record.name}
                       </span>
