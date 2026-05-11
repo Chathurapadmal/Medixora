@@ -40,6 +40,7 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [statusFilter, setStatusFilter] = useState<InventoryFilterStatus>("All Statuses");
+  const [supplierFilter, setSupplierFilter] = useState("All Suppliers");
 
   // Action menu
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -130,6 +131,16 @@ export default function InventoryPage() {
     return ["All Categories", ...Array.from(categories).sort()];
   }, [normalizedItems]);
 
+  const supplierOptions = useMemo(() => {
+    const suppliers = new Set(
+      normalizedItems
+        .map((item) => item.supplier?.trim())
+        .filter((value): value is string => Boolean(value))
+    );
+
+    return ["All Suppliers", ...Array.from(suppliers).sort()];
+  }, [normalizedItems]);
+
   const filteredItems = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
 
@@ -146,9 +157,12 @@ export default function InventoryPage() {
       const matchesStatus =
         statusFilter === "All Statuses" || item.status === statusFilter;
 
-      return matchesSearch && matchesCategory && matchesStatus;
+      const matchesSupplier =
+        supplierFilter === "All Suppliers" || item.supplier === supplierFilter;
+
+      return matchesSearch && matchesCategory && matchesStatus && matchesSupplier;
     });
-  }, [categoryFilter, normalizedItems, searchTerm, statusFilter]);
+  }, [categoryFilter, normalizedItems, searchTerm, statusFilter, supplierFilter]);
 
   const totalMedicines = normalizedItems.length;
   const criticalLevels = normalizedItems.filter((item) => {
@@ -231,7 +245,7 @@ export default function InventoryPage() {
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-end">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_180px_180px] lg:items-end">
             <label className="block">
               <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
                 Search Inventory
@@ -279,9 +293,20 @@ export default function InventoryPage() {
               </select>
             </label>
 
-            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
-              More Filters
-            </button>
+            <label className="block">
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">
+                Supplier
+              </span>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-blue-500"
+                value={supplierFilter}
+                onChange={(e) => setSupplierFilter(e.target.value)}
+              >
+                {supplierOptions.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </select>
+            </label>
           </div>
         </section>
 
