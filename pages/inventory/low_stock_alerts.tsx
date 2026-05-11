@@ -47,6 +47,15 @@ export default function LowStockAlertsPage() {
       .then((data: unknown) => {
         const rows = Array.isArray(data) ? data : (data as Record<string, unknown>)?.value || [];
         const safeRows = Array.isArray(rows) ? rows : [];
+
+        // Extract unique supplier names from the full dataset (for restock dropdown)
+        const names = [...new Set(
+          safeRows
+            .map((r: any) => String((r as Record<string, unknown>).supplier ?? ""))
+            .filter(Boolean),
+        )];
+        setSupplierList(names.sort());
+
         const low = safeRows
           .map((r) => {
             const row = r as Record<string, unknown>;
@@ -89,20 +98,6 @@ export default function LowStockAlertsPage() {
 
   useEffect(() => {
     fetchItems();
-
-    // Fetch unique supplier names for the restock dropdown
-    fetch("/api/inventory")
-      .then((r) => r.json())
-      .then((data: unknown) => {
-        const rows = Array.isArray(data) ? data : [];
-        const names = [...new Set(
-          rows
-            .map((r: any) => String(r.supplier ?? ""))
-            .filter(Boolean),
-        )];
-        setSupplierList(names.sort());
-      })
-      .catch(() => {});
   }, []);
 
   function openRestockModal(item: LowStockItem) {
