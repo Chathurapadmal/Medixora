@@ -75,7 +75,7 @@ export default function Suppliers() {
       <div className="bg-white border-b border-gray-200 -mx-4 -mt-4 sm:-mx-5 sm:-mt-5 lg:-mx-6 lg:-mt-6 px-4 py-6 sm:px-5 lg:px-6 mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Suppliers</h1>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">SUPPLIERS</h1>
             <p className="text-gray-600 mt-1">Manage medical equipment and pharmaceutical vendors.</p>
           </div>
           <button 
