@@ -37,6 +37,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ORDER BY i.medicine_id DESC`
         );
 
+      // Allow the browser to serve a cached response for up to 5s,
+      // and revalidate in the background for up to 30s after that
+      res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=5, stale-while-revalidate=30",
+      );
       return res.status(200).json(result.recordset || []);
     }
 
