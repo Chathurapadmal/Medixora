@@ -7,8 +7,9 @@ interface Supplier {
   supplier_id: number;
   supplier_name: string;
   contact_person: string;
-  contact_info: string;
-  category: string;
+  phone: string;
+  email: string;
+  address: string;
   status: string;
 }
 
@@ -143,16 +144,16 @@ export default function Suppliers() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Supplier Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Person</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contact Info</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">supplier_id</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">supplier_name</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">contact_person</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">phone</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">email</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">address</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">status</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-100">
                   {loading ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
@@ -168,22 +169,13 @@ export default function Suppliers() {
                   ) : (
                     suppliers.map((supplier, index) => (
                       <tr key={supplier.supplier_id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">VND-{supplier.supplier_id.toString().padStart(4, '0')}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900 font-medium">{supplier.supplier_name}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{supplier.supplier_id}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{supplier.supplier_name}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{supplier.contact_person}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          <div>{supplier.contact_info?.split('\n')[0]}</div>
-                          {supplier.contact_info?.includes('\n') && <div className="text-xs text-gray-500">{supplier.contact_info?.split('\n')[1]}</div>}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{supplier.category}</td>
-                        <td className="px-6 py-4 text-sm">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(supplier.status)}`}>
-                            {supplier.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          <button className="text-blue-600 hover:text-blue-800 font-medium">Edit</button>
-                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{supplier.phone}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{supplier.email}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{supplier.address}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{supplier.status}</td>
                       </tr>
                     ))
                   )}
