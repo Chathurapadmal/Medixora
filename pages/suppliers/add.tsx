@@ -4,6 +4,51 @@ import { useRouter } from 'next/router';
 export default function AddSupplier() {
   const router = useRouter();
 
+  const [formData, setFormData] = useState({
+    supplier_name: '',
+    contact_person: '',
+    phone: '',
+    email: '',
+    address: '',
+    status: 'Active'
+  });
+  
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!formData.supplier_name || !formData.phone) {
+      alert("Supplier Name and Phone are required");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/suppliers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      if (res.ok) {
+        router.push('/suppliers');
+      } else {
+        const error = await res.json();
+        alert("Failed to save: " + (error.message || "Unknown error"));
+      }
+    } catch (err) {
+      alert("An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const [categories, setCategories] = useState<string[]>(['Analgesics', 'Antibiotics', 'Cardiovascular']);
   const [newCategory, setNewCategory] = useState('');
 
@@ -42,6 +87,9 @@ export default function AddSupplier() {
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-1">Supplier Name *</label>
               <input 
+                name="supplier_name"
+                value={formData.supplier_name}
+                onChange={handleInputChange}
                 type="text" 
                 placeholder="e.g. PharmaCorp Logistics" 
                 className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
@@ -58,6 +106,9 @@ export default function AddSupplier() {
                     </svg>
                   </div>
                   <input 
+                    name="contact_person"
+                    value={formData.contact_person}
+                    onChange={handleInputChange}
                     type="text" 
                     placeholder="Full Name" 
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
@@ -73,6 +124,9 @@ export default function AddSupplier() {
                     </svg>
                   </div>
                   <input 
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
                     type="text" 
                     placeholder="+1 (555) 000-0000" 
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
@@ -90,6 +144,9 @@ export default function AddSupplier() {
                   </svg>
                 </div>
                 <input 
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
                   type="email" 
                   placeholder="contact@supplier.com" 
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
@@ -100,6 +157,9 @@ export default function AddSupplier() {
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-1">Physical Address</label>
               <textarea 
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
                 rows={3}
                 placeholder="Full street address, city, zip code..." 
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none"
@@ -121,10 +181,14 @@ export default function AddSupplier() {
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-1">Account Status</label>
               <div className="relative">
-                <select className="w-full appearance-none px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors cursor-pointer bg-white">
-                  <option>Active Vendor</option>
-                  <option>Pending Approval</option>
-                  <option>Suspended</option>
+                <select 
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  className="w-full appearance-none px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors cursor-pointer bg-white">
+                  <option value="Active">Active Vendor</option>
+                  <option value="Pending">Pending Approval</option>
+                  <option value="Suspended">Suspended</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,15 +252,24 @@ export default function AddSupplier() {
       <div className="border-t border-gray-200 mt-8 pt-6 flex justify-end gap-3 pb-8">
         <button 
           onClick={() => router.push('/suppliers')}
-          className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          disabled={loading}
+          className="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
-        <button className="px-5 py-2.5 rounded-lg bg-[#004dc5] hover:bg-blue-800 text-white text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
-          <svg className="h-4 w-4 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-          </svg>
-          Save Supplier
+        <button 
+          onClick={handleSave}
+          disabled={loading}
+          className="px-5 py-2.5 rounded-lg bg-[#004dc5] hover:bg-blue-800 text-white text-sm font-medium transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+        >
+          {loading ? 'Saving...' : (
+            <>
+              <svg className="h-4 w-4 opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              Save Supplier
+            </>
+          )}
         </button>
       </div>
     </div>
