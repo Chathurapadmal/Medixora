@@ -1,60 +1,101 @@
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   PlusIcon,
   SearchIcon,
 } from "@/components/dashboard-icons";
 
-const doctors = [
-  {
-    id: "#MD-1042",
-    name: "Dr. Sarah Jenkins",
-    initials: "SJ",
-    color: "bg-[#eef0ff] text-[#4554cb]",
-    specialization: "Cardiology",
-    phone: "(555) 123-4567",
-    email: "s.jenkins@medistock.com",
-    availability: "Mon, Wed, Fri",
-    status: "Available",
-    statusClass: "bg-[#dcf6e9] text-[#11805d]",
-  },
-  {
-    id: "#MD-1088",
-    name: "Dr. Robert Chen",
-    initials: "RC",
-    color: "bg-[#e7f7f0] text-[#11805d]",
-    specialization: "Neurology",
-    phone: "(555) 987-6543",
-    email: "r.chen@medistock.com",
-    availability: "Tue, Thu, Sat",
-    status: "Busy",
-    statusClass: "bg-[#ffe8d9] text-[#c2642c]",
-  },
-  {
-    id: "#MD-1102",
-    name: "Dr. Emily Parker",
-    initials: "EP",
-    color: "bg-[#eef2ff] text-[#5a6178]",
-    specialization: "Pediatrics",
-    phone: "(555) 456-7890",
-    email: "e.parker@medistock.com",
-    availability: "Mon - Fri",
-    status: "Off Duty",
-    statusClass: "bg-[#eceef5] text-[#70798d]",
-  },
-  {
-    id: "#MD-1145",
-    name: "Dr. Michael Chang",
-    initials: "MC",
-    color: "bg-[#fff1ea] text-[#c2642c]",
-    specialization: "Orthopedics",
-    phone: "(555) 234-5678",
-    email: "m.chang@medistock.com",
-    availability: "Wed, Thu, Fri",
-    status: "Available",
-    statusClass: "bg-[#dcf6e9] text-[#11805d]",
-  },
-];
+type Doctor = {
+  doctor_id: number;
+  doctor_name: string;
+  email?: string;
+  phone?: string;
+  specialization?: string;
+  qualifications?: string;
+  experience_years?: number;
+  consultation_fee?: number;
+  availability?: string;
+  shift_start?: string;
+  shift_end?: string;
+  status?: string;
+};
 
 export default function DoctorsPage() {
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [specialtyFilter, setSpecialtyFilter] = useState("all");
+
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/doctors");
+      if (!response.ok) {
+        throw new Error("Failed to fetch doctors");
+      }
+      const data = await response.json();
+      setDoctors(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+      setDoctors([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInitials = (name: string): string => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getColorForInitial = (name: string): string => {
+    const colors = [
+      "bg-[#eef0ff] text-[#4554cb]",
+      "bg-[#e7f7f0] text-[#11805d]",
+      "bg-[#eef2ff] text-[#5a6178]",
+      "bg-[#fff1ea] text-[#c2642c]",
+      "bg-[#f3e8ff] text-[#7c3aed]",
+      "bg-[#ffe6e6] text-[#d43d3d]",
+    ];
+    const hash = name.charCodeAt(0) % colors.length;
+    return colors[hash];
+  };
+
+  const getStatusClass = (status: string | undefined): string => {
+    switch (status?.toLowerCase()) {
+      case "active":
+        return "bg-[#dcf6e9] text-[#11805d]";
+      case "busy":
+        return "bg-[#ffe8d9] text-[#c2642c]";
+      case "off":
+        return "bg-[#eceef5] text-[#70798d]";
+      default:
+        return "bg-[#dcf6e9] text-[#11805d]";
+    }
+  };
+
+  const allSpecialties = Array.from(new Set(doctors.map(d => d.specialization).filter(Boolean)));
+
+  const filteredDoctors = doctors.filter((d) => {
+    const matchesSearch =
+      d.doctor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      d.doctor_id.toString().includes(searchTerm);
+
+    const matchesSpecialty =
+      specialtyFilter === "all" || d.specialization === specialtyFilter;
+
+    return matchesSearch && matchesSpecialty;
+  });
   return (
     <div className="mx-auto max-w-[1280px] space-y-6">
 
@@ -85,104 +126,126 @@ export default function DoctorsPage() {
             <SearchIcon className="h-4 w-4 text-slate-400" />
             <input
               placeholder="Search by name, ID, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-transparent text-sm outline-none"
             />
           </div>
 
           {/* FILTERS */}
           <div className="flex gap-2">
-            <select className="rounded-xl border border-slate-200 px-4 py-2 text-sm bg-white">
-              <option>All Specialties</option>
-              <option>Cardiology</option>
-              <option>Neurology</option>
-              <option>Pediatrics</option>
-              <option>Orthopedics</option>
+            <select 
+              value={specialtyFilter}
+              onChange={(e) => setSpecialtyFilter(e.target.value)}
+              className="rounded-xl border border-slate-200 px-4 py-2 text-sm bg-white"
+            >
+              <option value="all">All Specialties</option>
+              {allSpecialties.map((specialty) => (
+                <option key={specialty} value={specialty}>
+                  {specialty}
+                </option>
+              ))}
             </select>
 
-            <button className="rounded-xl border border-slate-200 px-4 py-2 text-sm hover:bg-slate-50">
-              More Filters
+            <button onClick={fetchDoctors} className="rounded-xl border border-slate-200 px-4 py-2 text-sm hover:bg-slate-50">
+              Refresh
             </button>
           </div>
         </div>
       </div>
 
-      {/* TABLE */}
-      <div className="rounded-[20px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
-        <div className="overflow-hidden rounded-[20px]">
-          <table className="w-full text-left">
-
-            <thead>
-              <tr className="bg-[#fafbff] text-[13px] text-slate-500">
-                <th className="px-5 py-3">ID</th>
-                <th className="px-5 py-3">DOCTOR</th>
-                <th className="px-5 py-3">SPECIALIZATION</th>
-                <th className="px-5 py-3">CONTACT</th>
-                <th className="px-5 py-3">AVAILABILITY</th>
-                <th className="px-5 py-3">STATUS</th>
-              </tr>
-            </thead>
-
-            <tbody className="text-[14px] text-slate-700">
-              {doctors.map((d) => (
-                <tr key={d.id} className="border-t border-slate-200">
-
-                  {/* ID */}
-                  <td className="px-5 py-4 text-slate-500">
-                    {d.id}
-                  </td>
-
-                  {/* DOCTOR */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-9 w-9 flex items-center justify-center rounded-full text-xs font-semibold ${d.color}`}>
-                        {d.initials}
-                      </div>
-                      <span>{d.name}</span>
-                    </div>
-                  </td>
-
-                  {/* SPECIALIZATION */}
-                  <td className="px-5 py-4 text-slate-600">
-                    {d.specialization}
-                  </td>
-
-                  {/* CONTACT */}
-                  <td className="px-5 py-4 text-slate-600">
-                    <div>{d.phone}</div>
-                    <div className="text-xs text-slate-400">{d.email}</div>
-                  </td>
-
-                  {/* AVAILABILITY */}
-                  <td className="px-5 py-4 text-slate-600">
-                    {d.availability}
-                  </td>
-
-                  {/* STATUS */}
-                  <td className="px-5 py-4">
-                    <span className={`rounded-full px-3 py-1 text-xs font-medium ${d.statusClass}`}>
-                      {d.status}
-                    </span>
-                  </td>
-
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* ERROR STATE */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error}
         </div>
+      )}
 
-        {/* FOOTER */}
-        <div className="flex items-center justify-between px-5 py-3 text-sm text-slate-500 border-t border-slate-200">
-          <span>Showing 1 to 4 of 42 doctors</span>
+      {/* LOADING STATE */}
+      {loading && (
+        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
+          <p className="text-slate-600">Loading doctors...</p>
+        </div>
+      )}
 
-          <div className="flex items-center gap-2">
-            <button className="px-2 py-1">‹</button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded">1</button>
-            <button className="px-2 py-1">2</button>
-            <button className="px-2 py-1">3</button>
-            <button className="px-2 py-1">›</button>
+      {/* TABLE */}
+      {!loading && filteredDoctors.length > 0 && (
+        <div className="rounded-[20px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+          <div className="overflow-hidden rounded-[20px]">
+            <table className="w-full text-left">
+
+              <thead>
+                <tr className="bg-[#fafbff] text-[13px] text-slate-500">
+                  <th className="px-5 py-3">ID</th>
+                  <th className="px-5 py-3">DOCTOR</th>
+                  <th className="px-5 py-3">SPECIALIZATION</th>
+                  <th className="px-5 py-3">CONTACT</th>
+                  <th className="px-5 py-3">AVAILABILITY</th>
+                  <th className="px-5 py-3">STATUS</th>
+                </tr>
+              </thead>
+
+              <tbody className="text-[14px] text-slate-700">
+                {filteredDoctors.map((d) => (
+                  <tr key={d.doctor_id} className="border-t border-slate-200 hover:bg-slate-50">
+
+                    {/* ID */}
+                    <td className="px-5 py-4 text-slate-500">
+                      #MD-{d.doctor_id}
+                    </td>
+
+                    {/* DOCTOR */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-9 w-9 flex items-center justify-center rounded-full text-xs font-semibold ${getColorForInitial(d.doctor_name)}`}>
+                          {getInitials(d.doctor_name)}
+                        </div>
+                        <span>Dr. {d.doctor_name}</span>
+                      </div>
+                    </td>
+
+                    {/* SPECIALIZATION */}
+                    <td className="px-5 py-4 text-slate-600">
+                      {d.specialization || "N/A"}
+                    </td>
+
+                    {/* CONTACT */}
+                    <td className="px-5 py-4 text-slate-600">
+                      <div>{d.phone || "N/A"}</div>
+                      <div className="text-xs text-slate-400">{d.email || "N/A"}</div>
+                    </td>
+
+                    {/* AVAILABILITY */}
+                    <td className="px-5 py-4 text-slate-600">
+                      {d.availability || `${d.shift_start || ""} - ${d.shift_end || ""}`.trim() || "N/A"}
+                    </td>
+
+                    {/* STATUS */}
+                    <td className="px-5 py-4">
+                      <span className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusClass(d.status)}`}>
+                        {d.status || "Active"}
+                      </span>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* FOOTER */}
+          <div className="flex items-center justify-between px-5 py-3 text-sm text-slate-500 border-t border-slate-200">
+            <span>Showing {filteredDoctors.length} of {doctors.length} doctors</span>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* EMPTY STATE */}
+      {!loading && filteredDoctors.length === 0 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
+          <p className="text-slate-600">{searchTerm || specialtyFilter !== "all" ? "No doctors found matching your criteria." : "No doctors registered yet."}</p>
+        </div>
+      )}
     </div>
   );
 }
