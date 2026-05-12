@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useState } from "react";
 import {
   SearchIcon,
@@ -196,13 +197,13 @@ export default function PatientDirectoryPage() {
                     {openMenuId === patient.id && (
                       <div className="absolute right-6 top-12 z-30 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
                         
-                        <button
-                          type="button"
+                        <Link
+                          href="/patients/patient_details"
                           className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
                         >
                           <EyeIcon className="h-4 w-4" />
                           View
-                        </button>
+                        </Link>
 
                         <button
                           type="button"
