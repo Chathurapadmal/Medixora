@@ -177,7 +177,7 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) {
-      router.replace("/login");
+      if (router.pathname !== "/login") router.replace("/login");
       return;
     }
 
@@ -200,7 +200,7 @@ export default function Home() {
         });
       } catch (err) {
         console.error("Failed to decode token:", err);
-        router.replace("/login");
+        if (router.pathname !== "/login") router.replace("/login");
       } finally {
         setLoading(false);
       }

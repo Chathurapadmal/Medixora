@@ -94,41 +94,46 @@ export default async function handler(
       totalSuppliers: 0,
     };
 
-    if (usersTableExists) {
-      const usersResult = await pool.request().query(`
-        SELECT
-          COUNT(1) AS staffAccounts,
-          SUM(CASE WHEN LOWER([role]) IN ('admin', 'doctor', 'nurse', 'staff') AND LOWER(status) = 'active' THEN 1 ELSE 0 END) AS activeStaff
-        FROM dbo.users
-      `);
+    // Run all queries in parallel instead of sequentially
+    const queryPromises: Promise<any>[] = [];
 
-      summary.staffAccounts = toNumber(usersResult.recordset?.[0]?.staffAccounts);
-      summary.activeStaff = toNumber(usersResult.recordset?.[0]?.activeStaff);
+    if (usersTableExists) {
+      queryPromises.push(
+        pool.request().query(`
+          SELECT
+            COUNT(1) AS staffAccounts,
+            SUM(CASE WHEN LOWER([role]) IN ('admin', 'doctor', 'nurse', 'staff') AND LOWER(status) = 'active' THEN 1 ELSE 0 END) AS activeStaff
+          FROM dbo.users
+        `)
+      );
+    } else {
+      queryPromises.push(Promise.resolve(null));
     }
 
     if (inventoryTableExists) {
-      const inventoryResult = await pool.request().query(`
-        SELECT
-          COUNT(1) AS totalMedicines,
-          SUM(CASE WHEN COALESCE(stock_quantity, 0) > 0 AND COALESCE(stock_quantity, 0) < COALESCE(minimum_stock_level, 0) THEN 1 ELSE 0 END) AS lowStockMedicines,
-          SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date < CAST(GETDATE() AS date) THEN 1 ELSE 0 END) AS expiredMedicines,
-          CAST(SUM(COALESCE(stock_quantity, 0) * COALESCE(unit_price, 0)) AS decimal(18, 2)) AS inventoryValue
-        FROM dbo.inventory
-      `);
-
-      summary.totalMedicines = toNumber(inventoryResult.recordset?.[0]?.totalMedicines);
-      summary.lowStockMedicines = toNumber(inventoryResult.recordset?.[0]?.lowStockMedicines);
-      summary.expiredMedicines = toNumber(inventoryResult.recordset?.[0]?.expiredMedicines);
-      summary.inventoryValue = toNumber(inventoryResult.recordset?.[0]?.inventoryValue);
+      queryPromises.push(
+        pool.request().query(`
+          SELECT
+            COUNT(1) AS totalMedicines,
+            SUM(CASE WHEN COALESCE(stock_quantity, 0) > 0 AND COALESCE(stock_quantity, 0) < COALESCE(minimum_stock_level, 0) THEN 1 ELSE 0 END) AS lowStockMedicines,
+            SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date < CAST(GETDATE() AS date) THEN 1 ELSE 0 END) AS expiredMedicines,
+            CAST(SUM(COALESCE(stock_quantity, 0) * COALESCE(unit_price, 0)) AS decimal(18, 2)) AS inventoryValue
+          FROM dbo.inventory
+        `)
+      );
+    } else {
+      queryPromises.push(Promise.resolve(null));
     }
 
     if (suppliersTableExists) {
-      const suppliersResult = await pool.request().query(`
-        SELECT COUNT(1) AS totalSuppliers
-        FROM dbo.suppliers
-      `);
-
-      summary.totalSuppliers = toNumber(suppliersResult.recordset?.[0]?.totalSuppliers);
+      queryPromises.push(
+        pool.request().query(`
+          SELECT COUNT(1) AS totalSuppliers
+          FROM dbo.suppliers
+        `)
+      );
+    } else {
+      queryPromises.push(Promise.resolve(null));
     }
 
     const recentInventoryQuery = inventoryTableExists
@@ -176,13 +181,43 @@ export default async function handler(
         `
       : "";
 
-    const recentInventory: DashboardInventoryItem[] = inventoryTableExists
-      ? ((await pool.request().query(recentInventoryQuery)).recordset ?? []) as DashboardInventoryItem[]
-      : [];
+    if (recentInventoryQuery) {
+      queryPromises.push(pool.request().query(recentInventoryQuery));
+    } else {
+      queryPromises.push(Promise.resolve(null));
+    }
 
-    const lowStockItems: DashboardInventoryItem[] = inventoryTableExists
-      ? ((await pool.request().query(lowStockQuery)).recordset ?? []) as DashboardInventoryItem[]
-      : [];
+    if (lowStockQuery) {
+      queryPromises.push(pool.request().query(lowStockQuery));
+    } else {
+      queryPromises.push(Promise.resolve(null));
+    }
+
+    // Execute all queries in parallel
+    const [usersResult, inventoryResult, suppliersResult, recentInventoryResult, lowStockResult] = 
+      await Promise.all(queryPromises);
+
+    if (usersResult?.recordset) {
+      summary.staffAccounts = toNumber(usersResult.recordset[0]?.staffAccounts);
+      summary.activeStaff = toNumber(usersResult.recordset[0]?.activeStaff);
+    }
+
+    if (inventoryResult?.recordset) {
+      summary.totalMedicines = toNumber(inventoryResult.recordset[0]?.totalMedicines);
+      summary.lowStockMedicines = toNumber(inventoryResult.recordset[0]?.lowStockMedicines);
+      summary.expiredMedicines = toNumber(inventoryResult.recordset[0]?.expiredMedicines);
+      summary.inventoryValue = toNumber(inventoryResult.recordset[0]?.inventoryValue);
+    }
+
+    if (suppliersResult?.recordset) {
+      summary.totalSuppliers = toNumber(suppliersResult.recordset[0]?.totalSuppliers);
+    }
+
+    const recentInventory: DashboardInventoryItem[] = 
+      (recentInventoryResult?.recordset ?? []) as DashboardInventoryItem[];
+
+    const lowStockItems: DashboardInventoryItem[] = 
+      (lowStockResult?.recordset ?? []) as DashboardInventoryItem[];
 
     return res.status(200).json({
       summary,
