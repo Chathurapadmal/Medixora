@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         countQuery += ` WHERE supplier_name LIKE '%${search}%' OR contact_person LIKE '%${search}%'`;
       }
 
-      query += ` ORDER BY created_at DESC OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
+      query += ` ORDER BY supplier_id DESC OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
 
       const countResult = await pool.request().query(countQuery);
       const result = await pool.request().query(query);
