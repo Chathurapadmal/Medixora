@@ -15,7 +15,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
-    if (token) {
+    if (token && router.pathname !== "/") {
       router.replace("/");
     }
   }, [router]);
