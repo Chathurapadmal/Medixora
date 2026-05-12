@@ -383,3 +383,33 @@ export const ImportIcon = ({ className }: { className?: string }) => (
       d="M12 3v12m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
   </svg>
 );
+
+export function PrinterIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 9V4h12v5" />
+      <path d="M6 14h12v4H6z" />
+      <path d="M6 20h12" />
+      <rect x="4" y="15" width="16" height="8" rx="2" />
+    </Icon>
+  );
+}
+
+export function DownloadIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </Icon>
+  );
+}
+
+export function CheckCircleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </Icon>
+  );
+}
