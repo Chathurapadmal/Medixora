@@ -25,27 +25,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === "GET") {
       const { page = 1, limit = 10, search = "" } = req.query;
-      const offset = (parseInt(page as string) - 1) * parseInt(limit as string);
+      const pageNumber = Math.max(1, Number.parseInt(String(page), 10) || 1);
+      const pageLimit = Math.max(1, Number.parseInt(String(limit), 10) || 10);
+      const offset = (pageNumber - 1) * pageLimit;
+      const searchValue = Array.isArray(search) ? search[0] : search;
+      const hasSearch = typeof searchValue === "string" && searchValue.trim().length > 0;
 
-      let query = "SELECT * FROM suppliers";
-      let countQuery = "SELECT COUNT(*) as total FROM suppliers";
+      const filterClause = hasSearch
+        ? " WHERE supplier_name LIKE @search OR contact_person LIKE @search"
+        : "";
+      const countQuery = `SELECT COUNT(*) as total FROM suppliers${filterClause}`;
+      const query = `SELECT * FROM suppliers${filterClause} ORDER BY supplier_id DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
 
-      if (search) {
-        // Basic search filtering
-        query += ` WHERE supplier_name LIKE '%${search}%' OR contact_person LIKE '%${search}%'`;
-        countQuery += ` WHERE supplier_name LIKE '%${search}%' OR contact_person LIKE '%${search}%'`;
+      const countRequest = pool.request();
+      const dataRequest = pool.request();
+
+      if (hasSearch) {
+        const searchPattern = `%${searchValue.trim()}%`;
+        countRequest.input("search", searchPattern);
+        dataRequest.input("search", searchPattern);
       }
 
-      query += ` ORDER BY supplier_id DESC OFFSET ${offset} ROWS FETCH NEXT ${limit} ROWS ONLY`;
+      dataRequest.input("offset", offset);
+      dataRequest.input("limit", pageLimit);
 
-      const countResult = await pool.request().query(countQuery);
-      const result = await pool.request().query(query);
+      const countResult = await countRequest.query(countQuery);
+      const result = await dataRequest.query(query);
 
       return res.status(200).json({
         data: result.recordset || [],
         total: countResult.recordset[0]?.total || 0,
-        page: parseInt(page as string),
-        limit: parseInt(limit as string),
+        page: pageNumber,
+        limit: pageLimit,
       });
     }
 

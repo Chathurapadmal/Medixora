@@ -4,11 +4,11 @@ import { useRouter } from 'next/router';
 
 // Dummy data for invoices based on the screenshot
 const invoices = [
-  { id: '#INV-2023-8901', patient: 'Eleanor Pena', date: 'Oct 24, 2023', isOverdue: false, treatment: '$450.00', medicine: '$85.50', discount: '-$20.00', total: '$515.50' },
-  { id: '#INV-2023-8902', patient: 'Robert Fox', date: 'Oct 24, 2023', isOverdue: false, treatment: '$1,200.00', medicine: '$340.00', discount: '$0.00', total: '$1,540.00' },
-  { id: '#INV-2023-8895', patient: 'Wade Warren', date: 'Oct 18, 2023', isOverdue: true, treatment: '$80.00', medicine: '$25.00', discount: '$0.00', total: '$105.00' },
-  { id: '#INV-2023-8904', patient: 'Esther Howard', date: 'Oct 23, 2023', isOverdue: false, treatment: '$2,500.00', medicine: '$150.00', discount: '-$250.00', total: '$2,400.00' },
-  { id: '#INV-2023-8905', patient: 'Leslie Alexander', date: 'Oct 23, 2023', isOverdue: false, treatment: '$150.00', medicine: '$45.00', discount: '$0.00', total: '$195.00' },
+  { id: '#INV-2023-8901', patient: 'Eleanor Pena', date: 'Oct 24, 2023', isOverdue: false, treatment: 'Rs.450.00', medicine: 'Rs.85.50', discount: '-Rs.20.00', total: 'Rs.515.50' },
+  { id: '#INV-2023-8902', patient: 'Robert Fox', date: 'Oct 24, 2023', isOverdue: false, treatment: 'Rs.1,200.00', medicine: 'Rs.340.00', discount: 'Rs.0.00', total: 'Rs.1,540.00' },
+  { id: '#INV-2023-8895', patient: 'Wade Warren', date: 'Oct 18, 2023', isOverdue: true, treatment: 'Rs.80.00', medicine: 'Rs.25.00', discount: 'Rs.0.00', total: 'Rs.105.00' },
+  { id: '#INV-2023-8904', patient: 'Esther Howard', date: 'Oct 23, 2023', isOverdue: false, treatment: 'Rs.2,500.00', medicine: 'Rs.150.00', discount: '-Rs.250.00', total: 'Rs.2,400.00' },
+  { id: '#INV-2023-8905', patient: 'Leslie Alexander', date: 'Oct 23, 2023', isOverdue: false, treatment: 'Rs.150.00', medicine: 'Rs.45.00', discount: 'Rs.0.00', total: 'Rs.195.00' },
 ];
 
 export default function BillingManagement() {
@@ -44,7 +44,7 @@ export default function BillingManagement() {
               </div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-gray-900">$12,450.00</div>
+                <div className="text-4xl font-bold text-gray-900">Rs.12,450.00</div>
               <div className="text-sm text-green-600 mt-2 font-medium flex items-center gap-1">
                 ↑ 8.2% from yesterday
               </div>
@@ -71,7 +71,7 @@ export default function BillingManagement() {
             <div className="relative z-10">
               <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">AVG. BILL VALUE</div>
               <div>
-                <div className="text-4xl font-bold text-gray-900">$845.50</div>
+                <div className="text-4xl font-bold text-gray-900">Rs.845.50</div>
                 <div className="text-sm text-gray-500 mt-2">
                   Across all departments
                 </div>
