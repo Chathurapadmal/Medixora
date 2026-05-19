@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 
+
 type IconProps = {
   className?: string;
 };
@@ -411,5 +412,80 @@ export function CheckCircleIcon(props: IconProps) {
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
       <polyline points="22 4 12 14.01 9 11.01" />
     </Icon>
+  );
+}
+export function ClockIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 7v5l3 2"
+      />
+    </svg>
+  );
+}
+
+export function ExportIcon({ className = "" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"
+      />
+    </svg>
+  );
+}
+
+export function ChevronLeftIcon({ className = "" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2.5"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15 19l-7-7 7-7"
+      />
+    </svg>
+  );
+}
+
+export function ChevronDownIcon({ className = "" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2.5"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19 9l-7 7-7-7"
+      />
+    </svg>
   );
 }

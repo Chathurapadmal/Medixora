@@ -1,9 +1,7 @@
-import type { GetServerSideProps } from "next";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { MedicineIcon, PlusIcon } from "../../components/dashboard-icons";
-import { getConnection } from "../../lib/db";
 
 function Field({
   label,
@@ -27,23 +25,6 @@ function Field({
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10";
 
-async function getNextMedicineCode(pool: Awaited<ReturnType<typeof getConnection>>) {
-  const result = await pool.request().query(`
-    SELECT MAX(TRY_CAST(RIGHT(item_code, 3) AS INT)) AS maxCode
-    FROM inventory
-    WHERE item_code LIKE 'MED-%'
-  `);
-
-  const maxCode = Number(result.recordset?.[0]?.maxCode ?? 0);
-  return `MED-${String(maxCode + 1).padStart(3, "0")}`;
-}
-
-type AddMedicinePageProps = {
-  suppliers: string[];
-  categories: string[];
-  defaultCode: string;
-};
-
 type MedicineForm = {
   name: string;
   category: string;
@@ -55,69 +36,33 @@ type MedicineForm = {
   expiryDate: string;
 };
 
-export const getServerSideProps: GetServerSideProps<AddMedicinePageProps> =
-  async () => {
-    try {
-      const pool = await getConnection();
-      const [supplierResult, categoryResult] = await Promise.all([
-        pool.request().query(`
-          SELECT supplier_name AS name
-          FROM suppliers
-          ORDER BY supplier_name
-        `),
-        pool.request().query(`
-          SELECT DISTINCT category AS name
-          FROM inventory
-          WHERE category IS NOT NULL
-            AND LTRIM(RTRIM(category)) <> ''
-          ORDER BY category
-        `),
-      ]);
+export default function AddMedicinePage() {
+  const [suppliers, setSuppliers] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-      const suppliers = (supplierResult.recordset ?? [])
-        .map((row: Record<string, unknown>) => String(row.name ?? ""))
-        .filter(Boolean);
-
-      const categories = (categoryResult.recordset ?? [])
-        .map((row: Record<string, unknown>) => String(row.name ?? ""))
-        .filter(Boolean);
-
-      const defaultCode = await getNextMedicineCode(pool);
-
-      return {
-        props: {
-          suppliers,
-          categories,
-          defaultCode,
-        },
-      };
-    } catch (error) {
-      console.error("/inventory/add_medicine SSR error", error);
-      return {
-        props: {
-          suppliers: [],
-          categories: [],
-          defaultCode: "MED-001",
-        },
-      };
-    }
-  };
-
-export default function AddMedicinePage({
-  suppliers,
-  categories = [],
-  defaultCode,
-}: AddMedicinePageProps) {
   const [form, setForm] = useState<MedicineForm>({
     name: "",
     category: "",
     supplier: "",
-    code: defaultCode,
+    code: "MED-...",
     quantity: 0,
     minimum: 0,
     price: "",
     expiryDate: "",
   });
+
+  useEffect(() => {
+    fetch("/api/add-medicine-data")
+      .then((r) => r.json())
+      .then((data: any) => {
+        setSuppliers(data.suppliers ?? []);
+        setCategories(data.categories ?? []);
+        setForm((f) => ({ ...f, code: data.defaultCode ?? "MED-001" }));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -212,13 +157,13 @@ export default function AddMedicinePage({
                   }
                 >
                   <option value="" disabled>
-                    Select Category
+                    {loading ? "Loading…" : "Select Category"}
                   </option>
                   {categories.length > 0 ? (
                     categories.map((category) => (
                       <option key={category}>{category}</option>
                     ))
-                  ) : (
+                  ) : !loading ? (
                     <>
                       <option>Antibiotics</option>
                       <option>Analgesics</option>
@@ -226,7 +171,7 @@ export default function AddMedicinePage({
                       <option>Vaccines</option>
                       <option>Supplements</option>
                     </>
-                  )}
+                  ) : null}
                 </select>
               </Field>
 
@@ -240,19 +185,19 @@ export default function AddMedicinePage({
                   }
                 >
                   <option value="" disabled>
-                    Select Supplier
+                    {loading ? "Loading…" : "Select Supplier"}
                   </option>
                   {suppliers.length > 0 ? (
                     suppliers.map((supplier) => (
                       <option key={supplier}>{supplier}</option>
                     ))
-                  ) : (
+                  ) : !loading ? (
                     <>
                       <option>PharmaGlobal Inc.</option>
                       <option>MedSupply Co.</option>
                       <option>Health Logistics</option>
                     </>
-                  )}
+                  ) : null}
                 </select>
               </Field>
 

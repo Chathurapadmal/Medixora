@@ -1,13 +1,11 @@
-import type { GetServerSideProps } from "next";
 import Head from "next/head";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangleIcon,
   SearchIcon,
   WarningSmallIcon,
 } from "../../components/dashboard-icons";
-import { getConnection } from "../../lib/db";
 
 type ExpiryStatus = "Expired" | "Expiring Soon";
 
@@ -25,11 +23,6 @@ type ExpiryItem = {
   supplier?: string;
 };
 
-type ExpiryAlertsPageProps = {
-  items: ExpiryItem[];
-  categories: string[];
-};
-
 const computeDaysRemaining = (expiry?: string) => {
   if (!expiry) return undefined;
   const d = new Date(expiry);
@@ -37,83 +30,72 @@ const computeDaysRemaining = (expiry?: string) => {
   return diff;
 };
 
-export const getServerSideProps: GetServerSideProps<ExpiryAlertsPageProps> =
-  async () => {
-    try {
-      const pool = await getConnection();
-      const result = await pool.request().query(`
-        SELECT
-          i.medicine_id AS id,
-          i.medicine_name AS name,
-          i.category AS category,
-          i.item_code AS batchNo,
-          i.stock_quantity AS quantity,
-          CONVERT(varchar(10), i.expiry_date, 23) AS expiryDate,
-          CAST(i.unit_price AS decimal(18, 2)) AS price,
-          i.stock_quantity AS stock,
-          s.supplier_name AS supplier
-        FROM inventory i
-        LEFT JOIN suppliers s ON s.supplier_id = i.supplier_id
-        WHERE i.expiry_date IS NOT NULL
-          AND i.expiry_date < DATEADD(day, 30, CAST(GETDATE() AS date))
-        ORDER BY i.expiry_date ASC, i.medicine_id DESC
-      `);
-
-      const rows = (result.recordset ?? []) as Array<Record<string, unknown>>;
-
-      const items = rows.map((row) => {
-        const expiryDate = String(row.expiryDate ?? "");
-        const daysRemaining = computeDaysRemaining(expiryDate);
-
-        return {
-          id: Number(row.id),
-          name: String(row.name ?? "Unknown"),
-          category: String(row.category ?? ""),
-          batchNo: String(row.batchNo ?? ""),
-          quantity: Number(row.quantity ?? 0),
-          expiryDate,
-          daysRemaining,
-          status:
-            typeof daysRemaining === "number" && daysRemaining < 0
-              ? ("Expired" as ExpiryStatus)
-              : ("Expiring Soon" as ExpiryStatus),
-          price: Number(row.price ?? 0),
-          stock: Number(row.stock ?? 0),
-          supplier: String(row.supplier ?? ""),
-        };
-      });
-
-      const categories = Array.from(
-        new Set(items.map((item) => item.category?.trim()).filter(Boolean) as string[])
-      ).sort();
-
-      return { props: { items, categories } };
-    } catch (error) {
-      console.error("/inventory/expiry_alerts SSR error", error);
-      return { props: { items: [], categories: [] } };
-    }
-  };
-
-export default function ExpiryAlertsPage({ items, categories = [] }: ExpiryAlertsPageProps) {
+export default function ExpiryAlertsPage() {
+  const [items, setItems] = useState<ExpiryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
 
+  useEffect(() => {
+    fetch("/api/inventory/expiry-alerts")
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        const rows = Array.isArray(data) ? data : [];
+
+        const mapped = rows.map((r: any) => {
+          const expiryDate = String(r.expiryDate ?? "");
+          const daysRemaining = computeDaysRemaining(expiryDate);
+
+          return {
+            id: Number(r.id),
+            name: String(r.name ?? "Unknown"),
+            category: String(r.category ?? ""),
+            batchNo: String(r.batchNo ?? ""),
+            quantity: Number(r.quantity ?? 0),
+            expiryDate,
+            daysRemaining,
+            status:
+              typeof daysRemaining === "number" && daysRemaining < 0
+                ? ("Expired" as ExpiryStatus)
+                : ("Expiring Soon" as ExpiryStatus),
+            price: Number(r.price ?? 0),
+            stock: Number(r.stock ?? 0),
+            supplier: String(r.supplier ?? ""),
+          };
+        });
+
+        setItems(mapped);
+      })
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const categories = useMemo(
+    () =>
+      Array.from(
+        new Set(items.map((item) => item.category?.trim()).filter(Boolean) as string[]),
+      ).sort(),
+    [items],
+  );
+
   const filteredItems = useMemo(
     () =>
-      items.filter(
-        (item) =>
-          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.batchNo?.toLowerCase().includes(searchTerm.toLowerCase())
-      ).filter(
-        (item) =>
-          categoryFilter === "All Categories" || item.category === categoryFilter
-      ),
-    [categoryFilter, items, searchTerm]
+      items
+        .filter(
+          (item) =>
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.batchNo?.toLowerCase().includes(searchTerm.toLowerCase()),
+        )
+        .filter(
+          (item) =>
+            categoryFilter === "All Categories" || item.category === categoryFilter,
+        ),
+    [categoryFilter, items, searchTerm],
   );
 
   const expiredCount = items.filter((item) => (item.daysRemaining ?? 999) < 0).length;
   const expiringCount = items.filter(
-    (item) => (item.daysRemaining ?? 999) >= 0 && (item.daysRemaining ?? 999) < 30
+    (item) => (item.daysRemaining ?? 999) >= 0 && (item.daysRemaining ?? 999) < 30,
   ).length;
   const valueAtRisk = items
     .filter((item) => (item.daysRemaining ?? 999) < 30)
@@ -165,10 +147,6 @@ export default function ExpiryAlertsPage({ items, categories = [] }: ExpiryAlert
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <button className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
-              Filter
-            </button>
-
             <button className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
               Export Report
             </button>
@@ -290,76 +268,75 @@ export default function ExpiryAlertsPage({ items, categories = [] }: ExpiryAlert
               </thead>
 
               <tbody className="divide-y divide-slate-100 bg-white">
-                {filteredItems.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
-                      {item.name}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.category || "-"}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.batchNo || "-"}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                      {item.quantity ?? "-"}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-700">
-                      {item.expiryDate || "-"}
-                    </td>
-
-                    <td
-                      className={[
-                        "whitespace-nowrap px-4 py-4 text-sm font-bold",
-                        (item.daysRemaining ?? 0) < 0
-                          ? "text-red-600"
-                          : "text-amber-600",
-                      ].join(" ")}
-                    >
-                      {typeof item.daysRemaining === "number"
-                        ? item.daysRemaining
-                        : "-"}
-                    </td>
-
-                    <td className="whitespace-nowrap px-4 py-4">
-                      <span
-                        className={[
-                          "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
-                          statusClass[(item.status ?? "Expiring Soon") as ExpiryStatus],
-                        ].join(" ")}
-                      >
-                        {item.status}
-                      </span>
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                      Loading…
                     </td>
                   </tr>
-                ))}
+                ) : filteredItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                      No expiry alerts found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredItems.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50">
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-950">
+                        {item.name}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {item.category || "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {item.batchNo || "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {item.quantity ?? "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-700">
+                        {item.expiryDate || "-"}
+                      </td>
+
+                      <td
+                        className={[
+                          "whitespace-nowrap px-4 py-4 text-sm font-bold",
+                          (item.daysRemaining ?? 0) < 0
+                            ? "text-red-600"
+                            : "text-amber-600",
+                        ].join(" ")}
+                      >
+                        {typeof item.daysRemaining === "number"
+                          ? item.daysRemaining
+                          : "-"}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span
+                          className={[
+                            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset",
+                            statusClass[(item.status ?? "Expiring Soon") as ExpiryStatus],
+                          ].join(" ")}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="border-t border-slate-200 bg-slate-50 px-4 py-4">
             <p className="text-sm text-slate-500">
               Showing 1 to {filteredItems.length} of {items.length} entries
             </p>
-
-            <div className="flex gap-2">
-              {["1", "2", "3"].map((page) => (
-                <button
-                  key={page}
-                  className={
-                    page === "1"
-                      ? "h-9 w-9 rounded-lg bg-blue-600 text-sm font-semibold text-white"
-                      : "h-9 w-9 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                  }
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
           </div>
         </section>
       </div>

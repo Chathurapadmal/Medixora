@@ -1,5 +1,15 @@
+import Link from "next/link";
 import { useState } from "react";
-import { SearchIcon } from "@/components/dashboard-icons";
+import {
+  SearchIcon,
+  EyeIcon,
+  EditIcon,
+  DeleteIcon,
+  FilterIcon,
+  ExportIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@/components/dashboard-icons";
 
 const patients = [
   {
@@ -48,16 +58,6 @@ const patients = [
   },
 ];
 
-function MaterialIcon({
-  name,
-  className = "",
-}: {
-  name: string;
-  className?: string;
-}) {
-  return <span className={`material-symbols-outlined ${className}`}>{name}</span>;
-}
-
 export default function PatientDirectoryPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
@@ -72,6 +72,7 @@ export default function PatientDirectoryPage() {
           <h2 className="text-[24px] font-semibold leading-8 tracking-[-0.01em] text-[#191b23]">
             Patient Directory
           </h2>
+
           <p className="mt-1 text-sm leading-5 text-[#434655]">
             Manage patient records, appointments, and medical history.
           </p>
@@ -83,9 +84,13 @@ export default function PatientDirectoryPage() {
       </div>
 
       <div className="overflow-visible rounded-xl border border-slate-200 bg-white shadow-[0px_4px_12px_rgba(0,0,0,0.03)]">
+        
+        {/* TOP BAR */}
         <div className="flex flex-col items-center justify-between gap-4 border-b border-slate-200 bg-white p-4 sm:flex-row">
+          
           <div className="relative w-full sm:max-w-xs">
             <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
             <input
               className="w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-9 pr-4 text-sm leading-5 transition-shadow focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#004ac6]"
               placeholder="Search by name or ID..."
@@ -94,20 +99,23 @@ export default function PatientDirectoryPage() {
           </div>
 
           <div className="flex w-full items-center gap-2 sm:w-auto">
+            
             <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.05em] text-[#434655] transition-colors hover:bg-slate-50 sm:w-auto">
-              <MaterialIcon name="filter_list" className="text-sm" />
+              <FilterIcon className="h-4 w-4 text-slate-500" />
               Filter
             </button>
 
             <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.05em] text-[#434655] transition-colors hover:bg-slate-50 sm:w-auto">
-              <MaterialIcon name="download" className="text-sm" />
+              <ExportIcon className="h-4 w-4 text-slate-500" />
               Export
             </button>
           </div>
         </div>
 
+        {/* TABLE */}
         <div className="overflow-x-auto">
           <table className="min-w-[1120px] w-full divide-y divide-slate-200 text-left">
+            
             <thead className="bg-slate-50">
               <tr>
                 {[
@@ -134,12 +142,14 @@ export default function PatientDirectoryPage() {
             <tbody className="divide-y divide-slate-100 bg-white text-sm">
               {patients.map((patient) => (
                 <tr key={patient.id} className="transition hover:bg-slate-50">
+                  
                   <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-medium text-slate-500">
                     {patient.id}
                   </td>
 
                   <td className="whitespace-nowrap px-4 py-4">
                     <div className="flex items-center gap-3">
+                      
                       <div
                         className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${patient.avatarClass}`}
                       >
@@ -168,37 +178,38 @@ export default function PatientDirectoryPage() {
 
                   <td className="whitespace-nowrap px-4 py-4">
                     <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${patient.statusClass}`}
+                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${patient.statusClass}`}
                     >
                       {patient.status}
                     </span>
                   </td>
 
+                  {/* FIXED ACTION ICONS */}
                   <td className="relative whitespace-nowrap px-4 py-4 text-center">
                     <button
                       type="button"
                       onClick={() => toggleMenu(patient.id)}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                      aria-label="Open actions menu"
                     >
-                      <MaterialIcon name="more_vert" className="text-[22px]" />
+                      <span className="text-xl leading-none">⋮</span>
                     </button>
 
                     {openMenuId === patient.id && (
                       <div className="absolute right-6 top-12 z-30 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
-                        <button
-                          type="button"
+                        
+                        <Link
+                          href="/patients/patient_details"
                           className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
                         >
-                          <MaterialIcon name="visibility" className="text-[18px]" />
+                          <EyeIcon className="h-4 w-4" />
                           View
-                        </button>
+                        </Link>
 
                         <button
                           type="button"
                           className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                         >
-                          <MaterialIcon name="edit" className="text-[18px]" />
+                          <EditIcon className="h-4 w-4" />
                           Edit
                         </button>
 
@@ -206,7 +217,7 @@ export default function PatientDirectoryPage() {
                           type="button"
                           className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
                         >
-                          <MaterialIcon name="delete" className="text-[18px]" />
+                          <DeleteIcon className="h-4 w-4" />
                           Delete
                         </button>
                       </div>
@@ -218,25 +229,19 @@ export default function PatientDirectoryPage() {
           </table>
         </div>
 
+        {/* FOOTER */}
         <div className="flex items-center justify-between border-t border-slate-200 bg-white p-4 text-sm text-slate-500">
+          
           <div>Showing 1 to 4 of 24 entries</div>
 
           <div className="flex items-center gap-1.5">
+            
             <button
               className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-[#f3f3fe] text-slate-400"
               disabled
               type="button"
-              aria-label="Previous page"
             >
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                <path
-                  d="M15 18l-6-6 6-6"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="square"
-                  strokeLinejoin="miter"
-                />
-              </svg>
+              <ChevronLeftIcon className="h-4 w-4" />
             </button>
 
             <button
@@ -267,17 +272,8 @@ export default function PatientDirectoryPage() {
             <button
               className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-[#f3f3fe] text-[#191b23] transition hover:bg-slate-100"
               type="button"
-              aria-label="Next page"
             >
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-                <path
-                  d="M9 6l6 6-6 6"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="square"
-                  strokeLinejoin="miter"
-                />
-              </svg>
+              <ChevronRightIcon className="h-4 w-4" />
             </button>
           </div>
         </div>
