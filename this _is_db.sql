@@ -288,3 +288,86 @@ SELECT * FROM dbo.vw_low_stock_inventory;
 SELECT * FROM dbo.vw_patients ORDER BY patient_id DESC;
 SELECT * FROM dbo.vw_doctors ORDER BY doctor_id DESC;
 SELECT * FROM dbo.vw_medical_records ORDER BY visit_date DESC;
+
+/* -------------------------------------------------------------------------- */
+/* invoices + invoice_items tables                                             */
+/* -------------------------------------------------------------------------- */
+
+IF OBJECT_ID('dbo.invoices', 'U') IS NULL
+BEGIN
+	CREATE TABLE dbo.invoices (
+		invoice_id     INT IDENTITY(1,1)  NOT NULL PRIMARY KEY,
+		invoice_number NVARCHAR(30)       NOT NULL CONSTRAINT DF_invoices_number DEFAULT (''),
+		patient_id     INT                NULL,
+		patient_name   NVARCHAR(255)      NOT NULL,
+		doctor_id      INT                NULL,
+		invoice_date   DATE               NOT NULL CONSTRAINT DF_invoices_date   DEFAULT CAST(GETDATE() AS date),
+		due_date       DATE               NULL,
+		treatment_cost DECIMAL(18,2)      NOT NULL CONSTRAINT DF_invoices_treat  DEFAULT (0),
+		medicine_cost  DECIMAL(18,2)      NOT NULL CONSTRAINT DF_invoices_med    DEFAULT (0),
+		discount       DECIMAL(18,2)      NOT NULL CONSTRAINT DF_invoices_disc   DEFAULT (0),
+		total_amount   DECIMAL(18,2)      NOT NULL CONSTRAINT DF_invoices_total  DEFAULT (0),
+		payment_method NVARCHAR(50)       NULL,
+		status         NVARCHAR(20)       NOT NULL CONSTRAINT DF_invoices_status DEFAULT ('Pending'),
+		notes          NVARCHAR(MAX)      NULL,
+		created_by     INT                NULL,
+		created_at     DATETIME2          NOT NULL CONSTRAINT DF_invoices_cat    DEFAULT SYSUTCDATETIME(),
+		updated_at     DATETIME2          NOT NULL CONSTRAINT DF_invoices_uat    DEFAULT SYSUTCDATETIME()
+	);
+END;
+
+-- Optional FK to patients / doctors (safe – only added if parent tables exist)
+IF OBJECT_ID('dbo.patients','U') IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_invoices_patients')
+	ALTER TABLE dbo.invoices ADD CONSTRAINT FK_invoices_patients
+	FOREIGN KEY (patient_id) REFERENCES dbo.patients(patient_id) ON DELETE SET NULL;
+
+IF OBJECT_ID('dbo.doctors','U') IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_invoices_doctors')
+	ALTER TABLE dbo.invoices ADD CONSTRAINT FK_invoices_doctors
+	FOREIGN KEY (doctor_id) REFERENCES dbo.doctors(doctor_id) ON DELETE SET NULL;
+
+IF OBJECT_ID('dbo.invoice_items', 'U') IS NULL
+BEGIN
+	CREATE TABLE dbo.invoice_items (
+		item_id      INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+		invoice_id   INT               NOT NULL REFERENCES dbo.invoices(invoice_id) ON DELETE CASCADE,
+		description  NVARCHAR(255)     NOT NULL,
+		item_type    NVARCHAR(50)      NOT NULL,   -- Treatment | Medicine | Other
+		quantity     INT               NOT NULL CONSTRAINT DF_invoice_items_qty DEFAULT (1),
+		unit_price   DECIMAL(18,2)     NOT NULL,
+		line_total   AS (quantity * unit_price) PERSISTED
+	);
+END;
+
+/* -------------------------------------------------------------------------- */
+/* vw_invoices – used by billing list page                                     */
+/* -------------------------------------------------------------------------- */
+
+EXEC(N'
+CREATE OR ALTER VIEW dbo.vw_invoices
+AS
+SELECT
+	inv.invoice_id,
+	inv.invoice_number,
+	inv.patient_id,
+	inv.patient_name,
+	inv.doctor_id,
+	d.doctor_name,
+	inv.invoice_date,
+	inv.due_date,
+	CAST(inv.treatment_cost AS decimal(18,2)) AS treatment_cost,
+	CAST(inv.medicine_cost  AS decimal(18,2)) AS medicine_cost,
+	CAST(inv.discount       AS decimal(18,2)) AS discount,
+	CAST(inv.total_amount   AS decimal(18,2)) AS total_amount,
+	inv.payment_method,
+	inv.status,
+	inv.notes,
+	inv.created_at,
+	inv.updated_at
+FROM dbo.invoices inv
+LEFT JOIN dbo.doctors d ON d.doctor_id = inv.doctor_id;
+');
+
+SELECT * FROM dbo.vw_invoices ORDER BY invoice_id DESC;
+
