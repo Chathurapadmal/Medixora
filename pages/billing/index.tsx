@@ -30,8 +30,14 @@ type ModalProps = {
   onCreated: (inv: Invoice) => void;
 };
 
+type Patient = {
+  patient_id: number;
+  patient_name: string;
+};
+
 function CreateInvoiceModal({ onClose, onCreated }: ModalProps) {
   const [form, setForm] = useState({
+    patient_id: "",
     patient_name: "",
     due_date: "",
     treatment_cost: "",
@@ -41,8 +47,26 @@ function CreateInvoiceModal({ onClose, onCreated }: ModalProps) {
     notes: "",
     status: "Pending",
   });
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loadingPatients, setLoadingPatients] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  // Load patients on mount
+  useEffect(() => {
+    async function loadPatients() {
+      try {
+        const res = await fetch("/api/patients");
+        const data = await res.json();
+        setPatients(Array.isArray(data) ? data : []);
+      } catch {
+        console.error("Failed to load patients");
+      } finally {
+        setLoadingPatients(false);
+      }
+    }
+    void loadPatients();
+  }, []);
 
   const treatNum = parseFloat(form.treatment_cost) || 0;
   const medNum   = parseFloat(form.medicine_cost)  || 0;
@@ -56,7 +80,7 @@ function CreateInvoiceModal({ onClose, onCreated }: ModalProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!form.patient_name.trim()) { setError("Patient name is required."); return; }
+    if (!form.patient_id.trim()) { setError("Please select a patient."); return; }
 
     setSaving(true);
     try {
@@ -64,6 +88,7 @@ function CreateInvoiceModal({ onClose, onCreated }: ModalProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          patient_id:     parseInt(form.patient_id, 10),
           patient_name:   form.patient_name.trim(),
           due_date:       form.due_date || undefined,
           treatment_cost: treatNum,
@@ -103,17 +128,33 @@ function CreateInvoiceModal({ onClose, onCreated }: ModalProps) {
             <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
           )}
 
-          {/* Patient name */}
+          {/* Patient name - select dropdown */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Patient Name <span className="text-red-500">*</span></label>
-            <input
-              type="text"
+            <select
               required
-              value={form.patient_name}
-              onChange={e => set("patient_name", e.target.value)}
-              placeholder="e.g. John Silva"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-            />
+              value={form.patient_id}
+              onChange={e => {
+                const selectedId = e.target.value;
+                const selectedPatient = patients.find(p => p.patient_id.toString() === selectedId);
+                setForm(prev => ({
+                  ...prev,
+                  patient_id: selectedId,
+                  patient_name: selectedPatient?.patient_name || "",
+                }));
+              }}
+              disabled={loadingPatients}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-60"
+            >
+              <option value="">
+                {loadingPatients ? "Loading patients..." : "Select a patient"}
+              </option>
+              {patients.map(patient => (
+                <option key={patient.patient_id} value={patient.patient_id.toString()}>
+                  {patient.patient_name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Due date & Status */}
