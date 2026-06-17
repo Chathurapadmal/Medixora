@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 
@@ -14,6 +14,46 @@ const invoices = [
 export default function BillingManagement() {
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const [billingSummary, setBillingSummary] = useState({ todaysCollections: 0, avgBillValue: 0 });
+  const [billingLoading, setBillingLoading] = useState(true);
+  const [billingError, setBillingError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetch('/api/billing/summary')
+      .then((response) => response.json())
+      .then((data) => {
+        if (!mounted) return;
+        if (data?.todaysCollections !== undefined && data?.avgBillValue !== undefined) {
+          setBillingSummary({
+            todaysCollections: Number(data.todaysCollections ?? 0),
+            avgBillValue: Number(data.avgBillValue ?? 0),
+          });
+          setBillingError('');
+        } else {
+          setBillingError('Unable to load billing summary');
+        }
+      })
+      .catch((error) => {
+        if (!mounted) return;
+        setBillingError(error instanceof Error ? error.message : 'Failed to load billing summary');
+      })
+      .finally(() => {
+        if (mounted) setBillingLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  function formatCurrency(value: number) {
+    return `Rs.${value.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  }
 
   return (
     <>
@@ -44,9 +84,11 @@ export default function BillingManagement() {
               </div>
             </div>
             <div>
-                <div className="text-4xl font-bold text-gray-900">Rs.12,450.00</div>
+              <div className="text-4xl font-bold text-gray-900">
+                {billingLoading ? 'Loading...' : formatCurrency(billingSummary.todaysCollections)}
+              </div>
               <div className="text-sm text-green-600 mt-2 font-medium flex items-center gap-1">
-                ↑ 8.2% from yesterday
+                {billingError ? 'Unable to load today\'s collections' : '↑ 8.2% from yesterday'}
               </div>
             </div>
           </div>
@@ -71,7 +113,9 @@ export default function BillingManagement() {
             <div className="relative z-10">
               <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">AVG. BILL VALUE</div>
               <div>
-                <div className="text-4xl font-bold text-gray-900">Rs.845.50</div>
+                <div className="text-4xl font-bold text-gray-900">
+                  {billingLoading ? 'Loading...' : formatCurrency(billingSummary.avgBillValue)}
+                </div>
                 <div className="text-sm text-gray-500 mt-2">
                   Across all departments
                 </div>
