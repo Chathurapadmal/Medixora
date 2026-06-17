@@ -87,9 +87,9 @@ export default function PatientDirectoryPage() {
           </p>
         </div>
 
-        <button className="flex items-center gap-2 rounded-lg bg-[#004ac6] px-4 py-2 text-xs font-semibold uppercase tracking-[0.05em] text-white shadow-sm transition-all hover:bg-[#003ea8] active:scale-[0.98]">
-          Add New Patient
-        </button>
+        <Link href="/patients/add" className="flex items-center gap-2 rounded-lg bg-[#004ac6] px-4 py-2 text-xs font-semibold uppercase tracking-[0.05em] text-white shadow-sm transition-all hover:bg-[#003ea8] active:scale-[0.98]">
+  Add New Patient
+</Link>
       </div>
 
       <div className="overflow-visible rounded-xl border border-slate-200 bg-white shadow-[0px_4px_12px_rgba(0,0,0,0.03)]">
