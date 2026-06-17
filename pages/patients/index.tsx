@@ -209,20 +209,31 @@ export default function PatientDirectoryPage() {
                       <div className="absolute right-6 top-12 z-30 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
                         
                         <Link
-                          href="/patients/patient_details"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                          View
-                        </Link>
+  href={`/patients/${patient.id}`}
+  className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+>
+  <EyeIcon className="h-4 w-4" />
+  View
+</Link>
 
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
-                        >
-                          <EditIcon className="h-4 w-4" />
-                          Edit
-                        </button>
+<Link
+  href={`/patients/edit/${patient.id}`}
+  className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+>
+  <EditIcon className="h-4 w-4" />
+  Edit
+</Link>
+
+<button
+  type="button"
+  onClick={() => alert(`Deleting patient ${patient.id}`)}
+  className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+>
+  <DeleteIcon className="h-4 w-4" />
+  Delete
+</button>
+
+
 
                         <button
                           type="button"
