@@ -151,7 +151,7 @@ export default function PatientDirectoryPage() {
             </thead>
 
             <tbody className="divide-y divide-slate-100 bg-white text-sm">
-              {patients.map((patient) => (
+              {filteredPatients.map((patient) => (
                 <tr key={patient.id} className="transition hover:bg-slate-50">
                   
                   <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-medium text-slate-500">
