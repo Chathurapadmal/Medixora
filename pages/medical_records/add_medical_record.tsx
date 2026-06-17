@@ -2,7 +2,16 @@ import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { PlusIcon } from "../../components/dashboard-icons";
+
+function SaveIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+    </svg>
+  );
+}
 
 function RecordIcon({ className }: { className?: string }) {
   return (
@@ -75,6 +84,9 @@ type MedicalRecordForm = {
 };
 
 export default function AddMedicalRecordPage() {
+  const router = useRouter();
+  const { id } = router.query;
+  const isEditing = !!id;
   const todayLocal = new Date().toISOString().slice(0, 16);
 
   const [form, setForm] = useState<MedicalRecordForm>({
@@ -111,13 +123,44 @@ export default function AddMedicalRecordPage() {
     return () => { mounted = false; };
   }, []);
 
+  useEffect(() => {
+    if (!id) return;
+    let mounted = true;
+    fetch(`/api/medical-records?id=${id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (mounted && data) {
+          setForm({
+            patientId: String(data.patientId || ""),
+            doctorId: String(data.doctorId || ""),
+            visitDate: data.visitDate ? new Date(data.visitDate).toISOString().slice(0, 16) : todayLocal,
+            diagnosis: data.diagnosis || "",
+            treatment: data.treatment || "",
+            prescription: data.prescription || "",
+            notes: data.notes || "",
+            status: data.status || "Completed",
+          });
+        }
+      })
+      .catch(console.error);
+    return () => { mounted = false; };
+  }, [id]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    // Fallback to window.location.search to ensure we don't lose the ID during submission
+    const params = new URLSearchParams(window.location.search);
+    const actualId = id || params.get("id");
+    const isEditMode = !!actualId;
+
+    const method = isEditMode ? "PUT" : "POST";
+    const body = isEditMode ? { ...form, id: Number(actualId) } : form;
+
     await fetch("/api/medical-records", {
-      method: "POST",
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(body),
     });
 
     location.href = "/medical_records";
@@ -126,7 +169,7 @@ export default function AddMedicalRecordPage() {
   return (
     <>
       <Head>
-        <title>Add Medical Record - MediStock</title>
+        <title>{isEditing ? "Edit" : "Add"} Medical Record - MediStock</title>
       </Head>
 
       <div className="relative mx-auto max-w-6xl space-y-6">
@@ -145,11 +188,11 @@ export default function AddMedicalRecordPage() {
                 Medical Records
               </Link>
               <span>/</span>
-              <span>Add Record</span>
+              <span>{isEditing ? "Edit Record" : "Add Record"}</span>
             </div>
 
             <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-              New Record
+              {isEditing ? "Edit Record" : "New Record"}
             </h1>
 
             <p className="mt-2 text-sm text-slate-500">
@@ -352,8 +395,8 @@ export default function AddMedicalRecordPage() {
               type="submit"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
             >
-              <PlusIcon className="h-4 w-4" />
-              Save Record
+              {isEditing ? <SaveIcon className="h-4 w-4" /> : <PlusIcon className="h-4 w-4" />}
+              {isEditing ? "Save Changes" : "Save Record"}
             </button>
           </div>
         </form>
