@@ -100,11 +100,13 @@ export default function PatientDirectoryPage() {
           <div className="relative w-full sm:max-w-xs">
             <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-            <input
-              className="w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-9 pr-4 text-sm leading-5 transition-shadow focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#004ac6]"
-              placeholder="Search by name or ID..."
-              type="text"
-            />
+          <input
+  className="w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-9 pr-4 text-sm leading-5 transition-shadow focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#004ac6]"
+  placeholder="Search by name or ID..."
+  type="text"
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+/>
           </div>
 
           <div className="flex w-full items-center gap-2 sm:w-auto">
