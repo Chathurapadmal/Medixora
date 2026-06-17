@@ -17,15 +17,75 @@ SET QUOTED_IDENTIFIER ON;
 IF OBJECT_ID('dbo.users', 'U') IS NULL
 BEGIN
 	CREATE TABLE dbo.users (
-		user_id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-		username NVARCHAR(255) NOT NULL,
-		email NVARCHAR(255) NOT NULL,
-		password_hash NVARCHAR(255) NOT NULL,
-		[role] NVARCHAR(50) NOT NULL,
-		status NVARCHAR(20) NOT NULL CONSTRAINT DF_users_status DEFAULT ('active'),
-		created_at DATETIME2 NOT NULL CONSTRAINT DF_users_created_at DEFAULT SYSUTCDATETIME()
+		user_id        INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+		username       NVARCHAR(255) NOT NULL,
+		email          NVARCHAR(255) NOT NULL,
+		password_hash  NVARCHAR(255) NOT NULL,
+		[role]         NVARCHAR(50)  NOT NULL,
+		status         NVARCHAR(20)  NOT NULL CONSTRAINT DF_users_status    DEFAULT ('active'),
+		created_at     DATETIME2     NOT NULL CONSTRAINT DF_users_created_at DEFAULT SYSUTCDATETIME(),
+		-- Profile fields (added by settings API – nullable for backwards compat)
+		avatar_url     NVARCHAR(1000) NULL,
+		first_name     NVARCHAR(100)  NULL,
+		last_name      NVARCHAR(100)  NULL,
+		phone          NVARCHAR(50)   NULL,
+		department     NVARCHAR(255)  NULL,
+		specialization NVARCHAR(255)  NULL,
+		license_no     NVARCHAR(100)  NULL,
+		ward           NVARCHAR(255)  NULL,
+		shift          NVARCHAR(100)  NULL,
+		nurse_station  NVARCHAR(255)  NULL
 	);
 END;
+
+-- ── Idempotent migrations for existing databases ──────────────────────────────
+DECLARE @cols TABLE (col_name NVARCHAR(100), col_def NVARCHAR(200));
+INSERT INTO @cols VALUES
+  ('avatar_url',     'NVARCHAR(1000) NULL'),
+  ('first_name',     'NVARCHAR(100)  NULL'),
+  ('last_name',      'NVARCHAR(100)  NULL'),
+  ('phone',          'NVARCHAR(50)   NULL'),
+  ('department',     'NVARCHAR(255)  NULL'),
+  ('specialization', 'NVARCHAR(255)  NULL'),
+  ('license_no',     'NVARCHAR(100)  NULL'),
+  ('ward',           'NVARCHAR(255)  NULL'),
+  ('shift',          'NVARCHAR(100)  NULL'),
+  ('nurse_station',  'NVARCHAR(255)  NULL');
+
+DECLARE @col NVARCHAR(100), @def NVARCHAR(200);
+DECLARE col_cur CURSOR FOR SELECT col_name, col_def FROM @cols;
+OPEN col_cur;
+FETCH NEXT FROM col_cur INTO @col, @def;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('dbo.users') AND name = @col)
+    EXEC('ALTER TABLE dbo.users ADD ' + @col + ' ' + @def);
+  FETCH NEXT FROM col_cur INTO @col, @def;
+END;
+CLOSE col_cur; DEALLOCATE col_cur;
+
+-- ── clinic_settings (key-value store for clinic-wide config) ──────────────────
+IF OBJECT_ID('dbo.clinic_settings', 'U') IS NULL
+BEGIN
+	CREATE TABLE dbo.clinic_settings (
+		setting_key   NVARCHAR(100) NOT NULL PRIMARY KEY,
+		setting_value NVARCHAR(MAX) NULL,
+		updated_at    DATETIME2     NOT NULL CONSTRAINT DF_clinic_settings_uat DEFAULT SYSUTCDATETIME()
+	);
+	-- Seed default values
+	INSERT INTO dbo.clinic_settings (setting_key, setting_value) VALUES
+		('clinic_name',                  'MediStock General Hospital'),
+		('registration_id',              'MED-8892-NY'),
+		('phone',                        '+1 (555) 123-4567'),
+		('email',                        'contact@medistock-hospital.com'),
+		('timezone',                     '(UTC-05:00) Eastern Time'),
+		('language',                     'English (US)'),
+		('address',                      '100 Healthcare Ave, Medical District, NY 10001'),
+		('general_supplies_threshold',   '20'),
+		('critical_med_threshold',       '50'),
+		('surgical_equip_threshold',     '10');
+END;
+
 
 IF NOT EXISTS (
 	SELECT 1
