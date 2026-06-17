@@ -1,4 +1,6 @@
-import { useState } from "react";
+import Head from "next/head";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   SearchIcon,
   EyeIcon,
@@ -10,273 +12,339 @@ import {
   ChevronRightIcon,
 } from "@/components/dashboard-icons";
 
-const patients = [
-  {
-    id: "PT-2023-001",
-    initials: "SJ",
-    avatarClass: "bg-blue-100 text-blue-700",
-    name: "Sarah Jenkins",
-    details: "34 yrs • Female",
-    bloodGroup: "O+",
-    contact: "+1 (555) 123-4567",
-    status: "Active",
-    statusClass: "bg-emerald-100 text-emerald-800",
-  },
-  {
-    id: "PT-2023-002",
-    initials: "MR",
-    avatarClass: "bg-purple-100 text-purple-700",
-    name: "Michael Roberts",
-    details: "52 yrs • Male",
-    bloodGroup: "A-",
-    contact: "+1 (555) 987-6543",
-    status: "Active",
-    statusClass: "bg-emerald-100 text-emerald-800",
-  },
-  {
-    id: "PT-2023-003",
-    initials: "AL",
-    avatarClass: "bg-orange-100 text-orange-700",
-    name: "Anita Lopez",
-    details: "28 yrs • Female",
-    bloodGroup: "B+",
-    contact: "+1 (555) 345-6789",
-    status: "In Treatment",
-    statusClass: "bg-amber-100 text-amber-800",
-  },
-  {
-    id: "PT-2023-004",
-    initials: "DW",
-    avatarClass: "bg-rose-100 text-rose-700",
-    name: "David Williams",
-    details: "65 yrs • Male",
-    bloodGroup: "AB+",
-    contact: "+1 (555) 765-4321",
-    status: "Discharged",
-    statusClass: "bg-slate-100 text-slate-600",
-  },
+type Patient = {
+  id: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  bloodGroup?: string;
+  allergies?: string;
+  status?: string;
+};
+
+const PAGE_SIZE = 10;
+
+/** Turn a full name into two initials, e.g. "Sarah Jenkins" → "SJ" */
+function initials(name = "") {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
+
+/** Pick a deterministic avatar colour from the patient id */
+const AVATAR_CLASSES = [
+  "bg-blue-100 text-blue-700",
+  "bg-purple-100 text-purple-700",
+  "bg-orange-100 text-orange-700",
+  "bg-rose-100 text-rose-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-amber-100 text-amber-700",
 ];
+function avatarClass(id: number) {
+  return AVATAR_CLASSES[id % AVATAR_CLASSES.length];
+}
+
+function statusBadge(status?: string) {
+  switch (status) {
+    case "Active":
+      return "bg-emerald-100 text-emerald-800";
+    case "In Treatment":
+      return "bg-amber-100 text-amber-800";
+    case "Discharged":
+      return "bg-slate-100 text-slate-600";
+    default:
+      return "bg-emerald-100 text-emerald-800";
+  }
+}
+
+/** Capitalise first letter only */
+function capitalise(str = "") {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 export default function PatientDirectoryPage() {
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [patients, setPatients]     = useState<Patient[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState("");
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [page, setPage]             = useState(1);
 
-  const toggleMenu = (id: string) => {
+  useEffect(() => {
+    let mounted = true;
+
+    fetch("/api/patients")
+      .then((r) => r.json())
+      .then((data) => {
+        if (mounted) setPatients(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setPatients([]))
+      .finally(() => mounted && setLoading(false));
+
+    return () => { mounted = false; };
+  }, []);
+
+  /* ── filtering ── */
+  const filtered = patients.filter((p) => {
+    const q = search.toLowerCase();
+    return (
+      !q ||
+      p.name?.toLowerCase().includes(q) ||
+      String(p.id).includes(q)
+    );
+  });
+
+  /* ── pagination ── */
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage    = Math.min(page, totalPages);
+  const pageSlice   = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const toggleMenu = (id: number) =>
     setOpenMenuId(openMenuId === id ? null : id);
-  };
 
   return (
-    <div className="mx-auto w-full max-w-[1440px]">
-      <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h2 className="text-[24px] font-semibold leading-8 tracking-[-0.01em] text-[#191b23]">
-            Patient Directory
-          </h2>
+    <>
+      <Head>
+        <title>Patients - MediStock</title>
+      </Head>
 
-          <p className="mt-1 text-sm leading-5 text-[#434655]">
-            Manage patient records, appointments, and medical history.
-          </p>
-        </div>
-
-        <button className="flex items-center gap-2 rounded-lg bg-[#004ac6] px-4 py-2 text-xs font-semibold uppercase tracking-[0.05em] text-white shadow-sm transition-all hover:bg-[#003ea8] active:scale-[0.98]">
-          Add New Patient
-        </button>
-      </div>
-
-      <div className="overflow-visible rounded-xl border border-slate-200 bg-white shadow-[0px_4px_12px_rgba(0,0,0,0.03)]">
-        
-        {/* TOP BAR */}
-        <div className="flex flex-col items-center justify-between gap-4 border-b border-slate-200 bg-white p-4 sm:flex-row">
-          
-          <div className="relative w-full sm:max-w-xs">
-            <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-            <input
-              className="w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-9 pr-4 text-sm leading-5 transition-shadow focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#004ac6]"
-              placeholder="Search by name or ID..."
-              type="text"
-            />
+      <div className="mx-auto w-full max-w-[1440px]">
+        <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="text-[24px] font-semibold leading-8 tracking-[-0.01em] text-[#191b23]">
+              Patient Directory
+            </h2>
+            <p className="mt-1 text-sm leading-5 text-[#434655]">
+              Manage patient records, appointments, and medical history.
+            </p>
           </div>
 
-          <div className="flex w-full items-center gap-2 sm:w-auto">
-            
-            <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.05em] text-[#434655] transition-colors hover:bg-slate-50 sm:w-auto">
-              <FilterIcon className="h-4 w-4 text-slate-500" />
-              Filter
-            </button>
-
-            <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.05em] text-[#434655] transition-colors hover:bg-slate-50 sm:w-auto">
-              <ExportIcon className="h-4 w-4 text-slate-500" />
-              Export
-            </button>
-          </div>
+          <Link
+            href="/patients/patientregister"
+            className="flex items-center gap-2 rounded-lg bg-[#004ac6] px-4 py-2 text-xs font-semibold uppercase tracking-[0.05em] text-white shadow-sm transition-all hover:bg-[#003ea8] active:scale-[0.98]"
+          >
+            Add New Patient
+          </Link>
         </div>
 
-        {/* TABLE */}
-        <div className="overflow-x-auto">
-          <table className="min-w-[1120px] w-full divide-y divide-slate-200 text-left">
-            
-            <thead className="bg-slate-50">
-              <tr>
-                {[
-                  "Patient ID",
-                  "Name",
-                  "Details",
-                  "Blood Group",
-                  "Contact",
-                  "Status",
-                  "Actions",
-                ].map((header) => (
-                  <th
-                    key={header}
-                    className={`whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500 ${
-                      header === "Actions" ? "text-center" : ""
-                    }`}
-                  >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+        <div className="overflow-visible rounded-xl border border-slate-200 bg-white shadow-[0px_4px_12px_rgba(0,0,0,0.03)]">
 
-            <tbody className="divide-y divide-slate-100 bg-white text-sm">
-              {patients.map((patient) => (
-                <tr key={patient.id} className="transition hover:bg-slate-50">
-                  
-                  <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-medium text-slate-500">
-                    {patient.id}
-                  </td>
+          {/* TOP BAR */}
+          <div className="flex flex-col items-center justify-between gap-4 border-b border-slate-200 bg-white p-4 sm:flex-row">
+            <div className="relative w-full sm:max-w-xs">
+              <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                className="w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-9 pr-4 text-sm leading-5 transition-shadow focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#004ac6]"
+                placeholder="Search by name or ID..."
+                type="text"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              />
+            </div>
 
-                  <td className="whitespace-nowrap px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      
-                      <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${patient.avatarClass}`}
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.05em] text-[#434655] transition-colors hover:bg-slate-50 sm:w-auto">
+                <FilterIcon className="h-4 w-4 text-slate-500" />
+                Filter
+              </button>
+              <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.05em] text-[#434655] transition-colors hover:bg-slate-50 sm:w-auto">
+                <ExportIcon className="h-4 w-4 text-slate-500" />
+                Export
+              </button>
+            </div>
+          </div>
+
+          {/* TABLE */}
+          <div className="overflow-x-auto">
+            <table className="min-w-[1120px] w-full divide-y divide-slate-200 text-left">
+              <thead className="bg-slate-50">
+                <tr>
+                  {["Patient ID", "Name", "Gender", "Blood Group", "Contact", "Status", "Actions"].map(
+                    (header) => (
+                      <th
+                        key={header}
+                        className={`whitespace-nowrap px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500 ${
+                          header === "Actions" ? "text-center" : ""
+                        }`}
                       >
-                        {patient.initials}
-                      </div>
-
-                      <div className="text-sm font-semibold text-slate-950">
-                        {patient.name}
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                    {patient.details}
-                  </td>
-
-                  <td className="whitespace-nowrap px-4 py-4">
-                    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-500/20">
-                      {patient.bloodGroup}
-                    </span>
-                  </td>
-
-                  <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
-                    {patient.contact}
-                  </td>
-
-                  <td className="whitespace-nowrap px-4 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${patient.statusClass}`}
-                    >
-                      {patient.status}
-                    </span>
-                  </td>
-
-                  {/* FIXED ACTION ICONS */}
-                  <td className="relative whitespace-nowrap px-4 py-4 text-center">
-                    <button
-                      type="button"
-                      onClick={() => toggleMenu(patient.id)}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                    >
-                      <span className="text-xl leading-none">⋮</span>
-                    </button>
-
-                    {openMenuId === patient.id && (
-                      <div className="absolute right-6 top-12 z-30 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
-                        
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                          View
-                        </button>
-
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
-                        >
-                          <EditIcon className="h-4 w-4" />
-                          Edit
-                        </button>
-
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                        >
-                          <DeleteIcon className="h-4 w-4" />
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </td>
+                        {header}
+                      </th>
+                    )
+                  )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
 
-        {/* FOOTER */}
-        <div className="flex items-center justify-between border-t border-slate-200 bg-white p-4 text-sm text-slate-500">
-          
-          <div>Showing 1 to 4 of 24 entries</div>
+              <tbody className="divide-y divide-slate-100 bg-white text-sm">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                      Loading patients…
+                    </td>
+                  </tr>
+                ) : pageSlice.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                      No patients found.
+                    </td>
+                  </tr>
+                ) : (
+                  pageSlice.map((patient) => (
+                    <tr
+                      key={patient.id}
+                      className="transition hover:bg-slate-50"
+                      onClick={() => openMenuId !== null && setOpenMenuId(null)}
+                    >
+                      <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-medium text-slate-500">
+                        {String(patient.id).padStart(3, "0")}
+                      </td>
 
-          <div className="flex items-center gap-1.5">
-            
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-[#f3f3fe] text-slate-400"
-              disabled
-              type="button"
-            >
-              <ChevronLeftIcon className="h-4 w-4" />
-            </button>
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${avatarClass(patient.id)}`}
+                          >
+                            {initials(patient.name)}
+                          </div>
+                          <div className="text-sm font-semibold text-slate-950">
+                            {patient.name ?? "-"}
+                          </div>
+                        </div>
+                      </td>
 
-            <button
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2f56c6] text-[16px] font-medium text-white shadow-sm"
-              type="button"
-            >
-              1
-            </button>
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {patient.gender ? capitalise(patient.gender) : "-"}
+                      </td>
 
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md text-[16px] font-medium text-[#191b23] transition hover:bg-slate-100"
-              type="button"
-            >
-              2
-            </button>
+                      <td className="whitespace-nowrap px-4 py-4">
+                        {patient.bloodGroup ? (
+                          <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-500/20">
+                            {patient.bloodGroup}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-slate-400">-</span>
+                        )}
+                      </td>
 
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md text-[16px] font-medium text-[#191b23] transition hover:bg-slate-100"
-              type="button"
-            >
-              3
-            </button>
+                      <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        {patient.phone ?? "-"}
+                      </td>
 
-            <span className="px-0.5 text-[15px] font-semibold text-[#434655]">
-              ...
-            </span>
+                      <td className="whitespace-nowrap px-4 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(patient.status)}`}
+                        >
+                          {patient.status ?? "Active"}
+                        </span>
+                      </td>
 
-            <button
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-[#f3f3fe] text-[#191b23] transition hover:bg-slate-100"
-              type="button"
-            >
-              <ChevronRightIcon className="h-4 w-4" />
-            </button>
+                      {/* ACTIONS */}
+                      <td className="relative whitespace-nowrap px-4 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); toggleMenu(patient.id); }}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                        >
+                          <span className="text-xl leading-none">⋮</span>
+                        </button>
+
+                        {openMenuId === patient.id && (
+                          <div className="absolute right-6 top-12 z-30 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                            >
+                              <EyeIcon className="h-4 w-4" />
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                            >
+                              <EditIcon className="h-4 w-4" />
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                            >
+                              <DeleteIcon className="h-4 w-4" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* FOOTER / PAGINATION */}
+          <div className="flex items-center justify-between border-t border-slate-200 bg-white p-4 text-sm text-slate-500">
+            <div>
+              {loading
+                ? "Loading…"
+                : `Showing ${filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1} to ${Math.min(safePage * PAGE_SIZE, filtered.length)} of ${filtered.length} entries`}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-[#f3f3fe] text-slate-400 disabled:opacity-40"
+                disabled={safePage === 1}
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeftIcon className="h-4 w-4" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((n) => n === 1 || n === totalPages || Math.abs(n - safePage) <= 1)
+                .reduce<(number | "…")[]>((acc, n, idx, arr) => {
+                  if (idx > 0 && n - (arr[idx - 1] as number) > 1) acc.push("…");
+                  acc.push(n);
+                  return acc;
+                }, [])
+                .map((item, idx) =>
+                  item === "…" ? (
+                    <span key={`ellipsis-${idx}`} className="px-0.5 text-[15px] font-semibold text-[#434655]">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setPage(item as number)}
+                      className={`flex h-7 w-7 items-center justify-center rounded-md text-[14px] font-medium transition ${
+                        safePage === item
+                          ? "bg-[#2f56c6] text-white shadow-sm"
+                          : "text-[#191b23] hover:bg-slate-100"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 bg-[#f3f3fe] text-[#191b23] transition hover:bg-slate-100 disabled:opacity-40"
+                disabled={safePage === totalPages}
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                <ChevronRightIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
