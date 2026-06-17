@@ -60,6 +60,15 @@ const patients = [
 
 export default function PatientDirectoryPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  // This remembers what the user types in the search bar
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // This filters the patients list automatically
+  const filteredPatients = patients.filter((patient) => {
+    const matchesName = patient.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesId = patient.id.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesName || matchesId;
+  });
 
   const toggleMenu = (id: string) => {
     setOpenMenuId(openMenuId === id ? null : id);
