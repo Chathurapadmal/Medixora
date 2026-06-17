@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
+import UserAvatar from '@/components/UserAvatar';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type UserRole = 'Admin' | 'Doctor' | 'Nurse' | string;
@@ -163,8 +164,8 @@ function ActionBar({ status, onSave, errorMsg }: { status: SaveStatus; onSave: (
 }
 
 // ─── Profile Photo Uploader ───────────────────────────────────────────────────
-function ProfilePhotoUploader({ userId, currentAvatarUrl, accentColor = 'violet', label = 'Profile Photo', onUploadSuccess }: {
-  userId: string; currentAvatarUrl?: string; accentColor?: 'violet' | 'blue' | 'emerald'; label?: string; onUploadSuccess?: (url: string) => void;
+function ProfilePhotoUploader({ userId, userName = '', currentAvatarUrl, accentColor = 'violet', label = 'Profile Photo', onUploadSuccess }: {
+  userId: string; userName?: string; currentAvatarUrl?: string; accentColor?: 'violet' | 'blue' | 'emerald'; label?: string; onUploadSuccess?: (url: string) => void;
 }) {
   const [preview, setPreview] = useState(currentAvatarUrl || '');
   const [uploading, setUploading] = useState(false);
@@ -213,10 +214,18 @@ function ProfilePhotoUploader({ userId, currentAvatarUrl, accentColor = 'violet'
         onClick={() => fileInputRef.current?.click()} title="Click or drag image here">
         <div className={`w-24 h-24 rounded-2xl overflow-hidden border-2 ${colors.border} shadow-sm bg-slate-100 transition-all`}>
           {preview ? <img src={preview} alt="Profile" className="w-full h-full object-cover" />
-            : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                <span className="text-[10px] text-slate-400">No photo</span>
-              </div>}
+            : (
+              // Show the user's own colored-initial avatar as placeholder (not a generic icon)
+              <div className="w-full h-full" title="No photo uploaded yet">
+                <UserAvatar
+                  avatarUrl={null}
+                  name={userName}
+                  userId={userId}
+                  size={96}
+                  borderRadius="0px"
+                />
+              </div>
+            )}
           {preview && <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
             <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
           </div>}
@@ -350,7 +359,7 @@ function AdminProfileForm({ user, initial, onSaved }: { user: UserProfile; initi
       icon={<svg className="w-5 h-5 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
       title="Administrator Profile" subtitle="Your personal account information.">
       <div className="flex flex-col sm:flex-row gap-8">
-        <ProfilePhotoUploader userId={user.userId} currentAvatarUrl={user.avatarUrl} accentColor="violet" label="Admin Photo" />
+        <ProfilePhotoUploader userId={user.userId} userName={[form.first_name, form.last_name].filter(Boolean).join(' ') || user.username} currentAvatarUrl={user.avatarUrl} accentColor="violet" label="Admin Photo" />
         <div className="flex-1 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><FieldLabel label="First Name" /><TextField value={form.first_name} onChange={f('first_name')} placeholder="First name" /></div>
@@ -385,10 +394,15 @@ function StaffList({ staff, loading }: { staff: StaffMember[]; loading: boolean 
           const displayName = [member.first_name, member.last_name].filter(Boolean).join(' ') || member.username;
           return (
             <div key={member.user_id} className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-100 hover:border-slate-200 bg-slate-50/60 hover:bg-white transition-all group">
-              <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200 bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0">
-                {member.avatar_url ? <img src={member.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-[13px] font-bold text-slate-500">{displayName[0]?.toUpperCase()}</div>}
-              </div>
+              {/* Each staff member gets their own unique avatar — real photo if uploaded, otherwise a deterministic colored-initial icon */}
+              <UserAvatar
+                avatarUrl={member.avatar_url || null}
+                name={displayName}
+                userId={member.user_id}
+                role={member.role}
+                size={36}
+                borderRadius="10px"
+              />
               <div className="flex-1 min-w-0">
                 <div className="text-[13.5px] font-semibold text-slate-800 truncate">{displayName}</div>
                 <div className="text-[12px] text-slate-500 truncate">{member.email}</div>
@@ -547,7 +561,7 @@ function DoctorProfileForm({ user, initial, onSaved }: { user: UserProfile; init
         icon={<svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         title="Doctor Profile" subtitle="Your personal and professional account details.">
         <div className="flex flex-col sm:flex-row gap-8">
-          <ProfilePhotoUploader userId={user.userId} currentAvatarUrl={user.avatarUrl} accentColor="blue" label="Doctor Photo" />
+          <ProfilePhotoUploader userId={user.userId} userName={[form.first_name, form.last_name].filter(Boolean).join(' ') || user.username} currentAvatarUrl={user.avatarUrl} accentColor="blue" label="Doctor Photo" />
           <div className="flex-1 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><FieldLabel label="First Name" /><TextField value={form.first_name} onChange={f('first_name')} placeholder="First name" /></div>
@@ -653,7 +667,7 @@ function NurseProfileForm({ user, initial, onSaved }: { user: UserProfile; initi
         icon={<svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         title="Nurse Profile" subtitle="Your personal account and ward assignment details.">
         <div className="flex flex-col sm:flex-row gap-8">
-          <ProfilePhotoUploader userId={user.userId} currentAvatarUrl={user.avatarUrl} accentColor="emerald" label="Nurse Photo" />
+          <ProfilePhotoUploader userId={user.userId} userName={[form.first_name, form.last_name].filter(Boolean).join(' ') || user.username} currentAvatarUrl={user.avatarUrl} accentColor="emerald" label="Nurse Photo" />
           <div className="flex-1 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><FieldLabel label="First Name" /><TextField value={form.first_name} onChange={f('first_name')} placeholder="First name" /></div>
