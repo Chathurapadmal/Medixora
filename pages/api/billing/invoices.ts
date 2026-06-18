@@ -167,12 +167,12 @@ export default async function handler(
         INSERT INTO dbo.invoices
           (invoice_number, patient_name, patient_id, doctor_id, invoice_date, due_date,
            treatment_cost, medicine_cost, discount, total_amount, payment_method, status, notes)
-        OUTPUT INSERTED.invoice_id
         VALUES (
           '',
           @patient_name, @patient_id, @doctor_id, CAST(GETDATE() AS date), @due_date,
           @treatment_cost, @medicine_cost, @discount, @total_amount, @payment_method, @status, @notes
         );
+        SELECT SCOPE_IDENTITY() AS invoice_id;
       `);
 
       // Update invoice_number using the real identity ID

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Head from "next/head";
+import Link from "next/link";
+import { useRouter } from "next/router";
 import type { Invoice } from "@/pages/api/billing/invoices";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -330,15 +332,15 @@ export default function BillingManagement() {
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 lg:text-3xl">Billing Management</h1>
             <p className="mt-0.5 text-sm text-slate-500">Review, process, and generate patient invoices.</p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
+          <Link
+            href="/billing/new-invoice"
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
             </svg>
             New Invoice
-          </button>
+          </Link>
         </div>
 
         {/* ── Stat Cards ── */}
@@ -472,7 +474,11 @@ export default function BillingManagement() {
                   </tr>
                 ) : invoices.map(inv => (
                   <tr key={inv.invoice_id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="whitespace-nowrap px-5 py-4 font-medium text-blue-600">{inv.invoice_number || `#${inv.invoice_id}`}</td>
+                    <td className="whitespace-nowrap px-5 py-4 font-medium">
+                      <Link href={`/billing/${inv.invoice_id}`} className="text-blue-600 hover:underline">
+                        {inv.invoice_number || `#${inv.invoice_id}`}
+                      </Link>
+                    </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-slate-800">{inv.patient_name}</td>
                     <td className="whitespace-nowrap px-5 py-4 text-slate-500">{inv.invoice_date}</td>
                     <td className="whitespace-nowrap px-5 py-4 text-slate-500">
