@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import {
@@ -81,6 +81,77 @@ function formatRecordId(id: number) {
   return `MR-${String(id).padStart(4, "0")}`;
 }
 
+function ActionsMenu({
+  record,
+  onDelete,
+}: {
+  record: MedicalRecord;
+  onDelete: (id: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative inline-block text-left" ref={ref}>
+      <button
+        type="button"
+        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
+        aria-label="Actions"
+      >
+        <MoreIcon className="h-5 w-5" />
+      </button>
+
+      {open && (
+        <div 
+          className="absolute right-0 z-[100] mt-2 w-40 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="py-1">
+            <Link
+              href={`/medical_records/${record.id}`}
+              className="block px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 font-medium"
+            >
+              View Full Record
+            </Link>
+            <Link
+              href={`/patients/${record.patientId}`}
+              className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              View Patient Details
+            </Link>
+            <button
+              type="button"
+              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium"
+              onClick={() => {
+                setOpen(false);
+                if (window.confirm("Are you sure you want to delete this medical record?")) {
+                  onDelete(record.id);
+                }
+              }}
+            >
+              Delete Record
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MedicalRecordsPage() {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [filtered, setFiltered] = useState<MedicalRecord[]>([]);
@@ -138,6 +209,40 @@ export default function MedicalRecordsPage() {
       })
     );
   }, [search, dateRange, records]);
+
+  const handleDelete = useCallback(async (id: number) => {
+    try {
+      const res = await fetch(`/api/medical-records/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete record");
+      
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+      setFiltered((prev) => prev.filter((r) => r.id !== id));
+    } catch (err: any) {
+      alert(err.message);
+    }
+  }, []);
+
+  const handleStatusChange = useCallback(async (id: number, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/medical-records/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+
+      setRecords((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+      );
+      setFiltered((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+      );
+    } catch (err: any) {
+      alert(err.message);
+    }
+  }, []);
 
   return (
     <>
@@ -304,23 +409,19 @@ export default function MedicalRecordsPage() {
                         </td>
 
                         <td className="whitespace-nowrap px-4 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${statusBadgeClass(record.status)}`}
+                          <select
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset outline-none cursor-pointer ${statusBadgeClass(record.status)}`}
+                            value={record.status || "Completed"}
+                            onChange={(e) => handleStatusChange(record.id, e.target.value)}
                           >
-                            {record.status
-                              ? record.status.charAt(0).toUpperCase() + record.status.slice(1)
-                              : "Completed"}
-                          </span>
+                            <option value="Completed">Completed</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Cancelled">Cancelled</option>
+                          </select>
                         </td>
 
                         <td className="whitespace-nowrap px-4 py-4 text-right">
-                          <button
-                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                            aria-label={`Actions for ${record.patientName}`}
-                            type="button"
-                          >
-                            <MoreIcon className="h-5 w-5" />
-                          </button>
+                          <ActionsMenu record={record} onDelete={handleDelete} />
                         </td>
                       </tr>
                     );
