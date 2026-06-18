@@ -8,9 +8,15 @@ export default async function handler(
   try {
     const pool = await getConnection();
     const result = await pool.request().query(`
-      SELECT COLUMN_NAME, DATA_TYPE
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_NAME = 'inventory'
+      IF COL_LENGTH('dbo.doctors', 'room') IS NULL
+      BEGIN
+        ALTER TABLE dbo.doctors ADD room NVARCHAR(50) NULL;
+        SELECT 'Added room column' AS status;
+      END
+      ELSE
+      BEGIN
+        SELECT 'Column already exists' AS status;
+      END
     `);
     res.status(200).json(result.recordset);
   } catch (err: any) {
