@@ -62,7 +62,7 @@ const formatTime = (t: string) => {
   return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ampm}`;
 };
 
-const ALL_STATUSES = ["", "Scheduled", "Pending", "Confirmed", "Completed", "Cancelled"];
+const ALL_STATUSES = ["", "Scheduled", "Pending", "Confirmed"];
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                           */

@@ -33,6 +33,8 @@ export default async function handler(
             ISNULL(d.specialization, '') AS specialization,
             ISNULL(d.shift_start, '')    AS shift_start,
             ISNULL(d.shift_end, '')      AS shift_end,
+            d.room,
+            CAST(d.consultation_fee AS decimal(18,2)) AS consultationFee,
             CONVERT(varchar(10), a.appointment_date, 23) AS appointment_date,
             a.appointment_time,
             ISNULL(a.reason_for_visit, '') AS reason_for_visit,
