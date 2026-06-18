@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useState, useEffect } from "react";
 import {
   AppointmentsIcon,
   BillingIcon,
@@ -29,6 +30,23 @@ const navItems = [
 
 export default function Sidebar() {
   const router = useRouter();
+  const [role, setRole] = useState<string>("");
+
+  useEffect(() => {
+    setRole(localStorage.getItem("userRole") || "Admin");
+  }, []);
+
+  // Filter items based on role
+  const allowedNavItems = navItems.filter((item) => {
+    if (role === "Admin") return true;
+    if (role === "Nurse") {
+      return ["Dashboard", "Patients", "Appointments", "Medical Records", "Billing"].includes(item.label);
+    }
+    if (role === "Doctor") {
+      return ["Dashboard", "Appointments", "Medical Records"].includes(item.label);
+    }
+    return false;
+  });
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -66,7 +84,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-1.5 px-3 py-4">
-        {navItems.map(({ label, href, icon: Icon }) => {
+        {allowedNavItems.map(({ label, href, icon: Icon }) => {
           const active = isActive(href);
 
           return (

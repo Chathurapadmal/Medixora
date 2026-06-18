@@ -75,6 +75,21 @@ export default async function handler(
 
     const userId = result.recordset[0]?.user_id;
 
+    // Interconnect: If role is Doctor, also add them to the doctors table
+    if (role === "Doctor") {
+      await pool
+        .request()
+        .input("doctor_name", sql.NVarChar, resolvedUsername)
+        .input("email", sql.NVarChar, email)
+        .query(`
+          IF NOT EXISTS (SELECT 1 FROM dbo.doctors WHERE email = @email)
+          BEGIN
+            INSERT INTO dbo.doctors (doctor_name, email, status)
+            VALUES (@doctor_name, @email, 'active')
+          END
+        `);
+    }
+
     res.status(201).json({
       success: true,
       message: "Registration successful",

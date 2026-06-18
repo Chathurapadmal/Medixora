@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getConnection, sql } from "../../../lib/db";
+import bcrypt from "bcryptjs";
 
 export default async function handler(
   req: NextApiRequest,
@@ -57,6 +58,7 @@ export default async function handler(
         shiftEnd,
         room,
         status,
+        password,
       } = req.body;
 
       const availabilityDays = Array.isArray(days) ? days.join(", ") : days;
@@ -76,6 +78,12 @@ export default async function handler(
       request.input("room", sql.NVarChar, room || null);
       request.input("status", sql.NVarChar, status || null);
 
+      // Interconnect: Get the old email to update the user account if needed
+      const oldEmailResult = await pool.request()
+        .input("id", sql.Int, Number(id))
+        .query(`SELECT email FROM doctors WHERE doctor_id = @id`);
+      const oldEmail = oldEmailResult.recordset[0]?.email;
+
       await request.query(`
         UPDATE doctors
         SET
@@ -94,13 +102,50 @@ export default async function handler(
         WHERE doctor_id = @id
       `);
 
+      // Interconnect: Update user account email/name/status/password if they changed
+      if (oldEmail) {
+        let passwordHash = null;
+        if (password && password.trim() !== "") {
+          passwordHash = await bcrypt.hash(password, 10);
+        }
+
+        await pool.request()
+          .input("oldEmail", sql.NVarChar, oldEmail)
+          .input("newEmail", sql.NVarChar, email || oldEmail)
+          .input("newName", sql.NVarChar, name || null)
+          .input("newStatus", sql.NVarChar, status || null)
+          .input("passwordHash", sql.NVarChar, passwordHash)
+          .query(`
+            UPDATE dbo.users
+            SET 
+              email = @newEmail,
+              username = ISNULL(@newName, username),
+              status = ISNULL(@newStatus, status),
+              password_hash = ISNULL(@passwordHash, password_hash)
+            WHERE email = @oldEmail AND [role] = 'Doctor'
+          `);
+      }
+
       return res.status(200).json({ message: "Doctor updated successfully" });
     }
 
     if (req.method === "DELETE") {
+      // Interconnect: Get the email to delete the associated user account
+      const docResult = await pool.request()
+        .input("id", sql.Int, Number(id))
+        .query(`SELECT email FROM doctors WHERE doctor_id = @id`);
+      const docEmail = docResult.recordset[0]?.email;
+
       await pool.request()
         .input("id", sql.Int, Number(id))
         .query(`DELETE FROM doctors WHERE doctor_id = @id`);
+
+      // Interconnect: Delete associated user account
+      if (docEmail) {
+        await pool.request()
+          .input("email", sql.NVarChar, docEmail)
+          .query(`DELETE FROM dbo.users WHERE email = @email AND [role] = 'Doctor'`);
+      }
 
       return res.status(200).json({ message: "Doctor deleted successfully" });
     }

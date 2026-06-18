@@ -81,7 +81,7 @@ const defaultStats = [
   },
   {
     label: "INVENTORY VALUE",
-    value: "$0.00",
+    value: "Rs. 0.00",
     changeLabel: "current stock valuation",
     icon: MoneyIcon,
     iconBg: "bg-[#dff8ee] text-[#12a76f]",
@@ -89,12 +89,12 @@ const defaultStats = [
 ];
 
 function formatCompactCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+  const formatted = new Intl.NumberFormat("en-US", {
     notation: value >= 10000 ? "compact" : "standard",
     maximumFractionDigits: value >= 10000 ? 1 : 2,
+    minimumFractionDigits: value < 10000 ? 2 : 0,
   }).format(value);
+  return `Rs. ${formatted}`;
 }
 
 function formatDate(value: string | null) {
@@ -168,11 +168,21 @@ function MetricCard({
 
 export default function Home() {
   const router = useRouter();
-  const [user, setUser] = useState<{ username: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; role: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Admin Data
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
+  const [doctorProfile, setDoctorProfile] = useState<any>(null);
+
+  // Role-specific quick stats
+  const [stats, setStats] = useState({
+    patientsCount: 0,
+    appointmentsCount: 0,
+    doctorAppointments: [] as any[],
+  });
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -185,18 +195,24 @@ export default function Home() {
     const storedRole = localStorage.getItem("userRole");
 
     const timeoutId = window.setTimeout(() => {
+      let email = "";
+      try {
+        email = atob(token).split(":")[2] || "";
+      } catch (e) {}
+
       if (storedUsername && storedRole) {
-        setUser({ username: storedUsername, role: storedRole });
+        setUser({ username: storedUsername, role: storedRole, email });
         setLoading(false);
         return;
       }
 
       try {
         const decoded = atob(token);
-        const [, username, role] = decoded.split(":");
+        const [, username, decodedEmail] = decoded.split(":");
         setUser({
           username: username || "Staff User",
-          role: role || "Staff",
+          role: "Staff",
+          email: decodedEmail || "",
         });
       } catch (err) {
         console.error("Failed to decode token:", err);
@@ -207,42 +223,68 @@ export default function Home() {
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [router]);
+  }, [router.pathname]);
 
   useEffect(() => {
     let mounted = true;
 
-    fetch("/api/dashboard")
-      .then((response) => response.json())
-      .then((data: DashboardResponse | { error?: string }) => {
-        if (!mounted) return;
-
-        if ("error" in data && data.error) {
-          setDashboardError(data.error);
+    if (user?.role === "Admin") {
+      fetch("/api/dashboard")
+        .then((response) => response.json())
+        .then((data: DashboardResponse | { error?: string }) => {
+          if (!mounted) return;
+          if ("error" in data && data.error) {
+            setDashboardError(data.error);
+            setDashboard(null);
+            return;
+          }
+          setDashboard(data as DashboardResponse);
+        })
+        .catch((error) => {
+          if (!mounted) return;
+          setDashboardError(error instanceof Error ? error.message : "Failed to load dashboard data");
           setDashboard(null);
-          return;
-        }
-
-        setDashboard(data as DashboardResponse);
-      })
-      .catch((error) => {
-        if (!mounted) return;
-
-        setDashboardError(error instanceof Error ? error.message : "Failed to load dashboard data");
-        setDashboard(null);
-      })
-      .finally(() => {
+        })
+        .finally(() => {
+          if (mounted) setDashboardLoading(false);
+        });
+    } else if (user?.role === "Nurse") {
+      Promise.all([
+        fetch("/api/patients").then(r => r.json()),
+        fetch("/api/appointments?limit=1").then(r => r.json())
+      ]).then(([pData, aData]) => {
         if (mounted) {
+          const pCount = Array.isArray(pData) ? pData.length : (pData.total || 0);
+          setStats(s => ({ ...s, patientsCount: pCount, appointmentsCount: aData.total || 0 }));
           setDashboardLoading(false);
         }
-      });
+      }).catch(() => { if (mounted) setDashboardLoading(false); });
+    } else if (user?.role === "Doctor") {
+      const email = user.email || "";
+      Promise.all([
+        fetch(`/api/appointments?doctorEmail=${encodeURIComponent(email)}&limit=10`).then(r => r.json()),
+        fetch(`/api/doctors?email=${encodeURIComponent(email)}`).then(r => r.json())
+      ])
+        .then(([aptData, docData]) => {
+          if (mounted) {
+            setStats(s => ({ ...s, doctorAppointments: aptData.data || [] }));
+            if (docData && docData.length > 0) {
+              setDoctorProfile(docData[0]);
+            }
+            setDashboardLoading(false);
+          }
+        })
+        .catch(() => { if (mounted) setDashboardLoading(false); });
+    } else {
+      if (mounted) setDashboardLoading(false);
+    }
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [user?.role, user?.email]);
 
-  const stats = useMemo(() => {
+  const adminStats = useMemo(() => {
     const summary = dashboard?.summary;
     const totalMedicines = summary?.totalMedicines ?? 0;
     const lowStockMedicines = summary?.lowStockMedicines ?? 0;
@@ -291,33 +333,25 @@ export default function Home() {
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <h1 className="text-[26px] font-semibold tracking-[-0.02em] text-slate-900">Dashboard Overview</h1>
-              <p className="mt-1 text-[14px] text-slate-500">Welcome back, {user.username}. Here is the current database snapshot.</p>
+              <p className="mt-1 text-[14px] text-slate-500">Welcome back, {user.username}. Here is the current snapshot for your role ({user.role}).</p>
             </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link href="/inventory/add_medicine" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[14px] font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50">
-                <PlusIcon className="h-4 w-4" />
-                Add Medicine
-              </Link>
-              <Link href="/register" className="inline-flex items-center gap-2 rounded-xl border border-[#1d4ed8] bg-[#2563eb] px-4 py-2.5 text-[14px] font-medium text-white shadow-[0_10px_20px_rgba(37,99,235,0.22)] transition hover:bg-[#1d4ed8]">
-                <DoctorsIcon className="h-4 w-4" />
-                Register User
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid gap-4 xl:grid-cols-4">
-            {stats.map((stat) => (
-              <MetricCard key={stat.label} {...stat} />
-            ))}
           </div>
         </div>
 
-        {dashboardError ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Dashboard data loaded with an error: {dashboardError}
-          </div>
-        ) : null}
+        {/* ADMIN DASHBOARD */}
+        {user.role === "Admin" && (
+          <>
+            <div className="grid gap-4 xl:grid-cols-4">
+              {adminStats.map((stat) => (
+                <MetricCard key={stat.label} {...stat} />
+              ))}
+            </div>
+
+            {dashboardError ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Dashboard data loaded with an error: {dashboardError}
+              </div>
+            ) : null}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.9fr)]">
           <div className="space-y-6">
@@ -476,6 +510,91 @@ export default function Home() {
             </div>
           </aside>
         </div>
+          </>
+        )}
+
+        {/* NURSE DASHBOARD */}
+        {user.role === "Nurse" && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <MetricCard
+              label="TOTAL PATIENTS"
+              value={String(stats.patientsCount)}
+              changeLabel="registered patients"
+              icon={DoctorsIcon}
+              iconBg="bg-[#eaf0ff] text-[#3657d6]"
+            />
+            <MetricCard
+              label="UPCOMING APPOINTMENTS"
+              value={String(stats.appointmentsCount)}
+              changeLabel="total appointments"
+              icon={MedicineIcon}
+              iconBg="bg-[#e7f7f0] text-[#11805d]"
+            />
+          </div>
+        )}
+
+        {/* DOCTOR DASHBOARD */}
+        {user.role === "Doctor" && (
+          <div className="space-y-6">
+            {doctorProfile && (
+              <div className="flex items-center justify-between rounded-[20px] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+                <div>
+                  <h2 className="text-[16px] font-semibold text-slate-900">My Profile Status</h2>
+                  <p className="text-[13px] text-slate-500">Update your current availability status in the doctor directory.</p>
+                </div>
+                <select
+                  value={doctorProfile.status}
+                  onChange={(e) => updateDoctorStatus(e.target.value)}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-[14px] font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                >
+                  <option value="Active">Active</option>
+                  <option value="On Leave">On Leave</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+            )}
+
+            <div className="rounded-[20px] border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+              <div className="border-b border-slate-200 px-5 py-4">
+                <h2 className="text-[16px] font-semibold text-slate-900">Your Recent & Upcoming Appointments</h2>
+              </div>
+              <div className="overflow-hidden rounded-b-[20px]">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-[#fafbff] text-[13px] font-medium text-slate-500">
+                    <th className="px-5 py-3">Patient</th>
+                    <th className="px-5 py-3">Date</th>
+                    <th className="px-5 py-3">Time</th>
+                    <th className="px-5 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.doctorAppointments.map((apt) => (
+                    <tr key={apt.appointment_id} className="border-b border-slate-100 last:border-b-0 text-[14px] text-slate-700">
+                      <td className="px-5 py-4 font-medium">{apt.patient_name}</td>
+                      <td className="px-5 py-4 text-slate-600">{formatDate(apt.appointment_date)}</td>
+                      <td className="px-5 py-4 text-slate-600">{apt.appointment_time}</td>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[12px] font-medium text-slate-600">
+                          {apt.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {!stats.doctorAppointments.length && (
+                    <tr>
+                      <td colSpan={4} className="px-5 py-8 text-center text-sm text-slate-500">
+                        No appointments found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          </div>
+        )}
+
       </div>
     </>
   );

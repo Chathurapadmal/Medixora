@@ -376,6 +376,49 @@ function AdminProfileForm({ user, initial, onSaved }: { user: UserProfile; initi
 }
 
 function StaffList({ staff, loading }: { staff: StaffMember[]; loading: boolean }) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newStaff, setNewStaff] = useState({ username: '', email: '', password: '', role: 'Nurse' });
+  const [adding, setAdding] = useState(false);
+
+  const handleAddStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdding(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStaff)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowAddForm(false);
+        setNewStaff({ username: '', email: '', password: '', role: 'Nurse' });
+        window.location.reload();
+      } else {
+        alert(data.error || data.message || "Failed to add staff.");
+      }
+    } catch {
+      alert("Network error.");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDeleteStaff = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/settings/staff/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert(data.message || "Failed to delete user.");
+      }
+    } catch {
+      alert("Network error.");
+    }
+  };
+
   if (loading) return (
     <SectionCard iconBg="bg-orange-50"
       icon={<svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
@@ -388,13 +431,37 @@ function StaffList({ staff, loading }: { staff: StaffMember[]; loading: boolean 
     <SectionCard iconBg="bg-orange-50"
       icon={<svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
       title="Staff & Role Management" subtitle={`${staff.length} registered staff member${staff.length !== 1 ? 's' : ''}`}>
+      
+      <div className="flex justify-end mb-4">
+        <button type="button" onClick={() => setShowAddForm(!showAddForm)}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg text-[13px] font-bold transition">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+          {showAddForm ? 'Cancel' : 'Add Nurse / Staff'}
+        </button>
+      </div>
+
+      {showAddForm && (
+        <form onSubmit={handleAddStaff} className="mb-5 p-4 bg-orange-50/50 border border-orange-100 rounded-xl space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><FieldLabel label="Username" /><TextField value={newStaff.username} onChange={v => setNewStaff(p => ({...p, username: v}))} placeholder="e.g. nurse_jane" /></div>
+            <div><FieldLabel label="Email" /><TextField type="email" value={newStaff.email} onChange={v => setNewStaff(p => ({...p, email: v}))} placeholder="jane@medixora.com" /></div>
+            <div><FieldLabel label="Password" /><TextField type="password" value={newStaff.password} onChange={v => setNewStaff(p => ({...p, password: v}))} placeholder="Min 8 characters" /></div>
+            <div><FieldLabel label="Role" /><SelectField value={newStaff.role} onChange={v => setNewStaff(p => ({...p, role: v}))} options={['Nurse', 'Admin', 'Doctor']} /></div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <button type="submit" disabled={adding} className="px-5 py-2 bg-orange-600 text-white rounded-xl text-[13px] font-semibold hover:bg-orange-700 disabled:opacity-50">
+              {adding ? 'Adding...' : 'Create Account'}
+            </button>
+          </div>
+        </form>
+      )}
+
       <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
         {staff.map(member => {
           const s = ROLE_STYLES[member.role] || ROLE_STYLES.Admin;
           const displayName = [member.first_name, member.last_name].filter(Boolean).join(' ') || member.username;
           return (
             <div key={member.user_id} className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-100 hover:border-slate-200 bg-slate-50/60 hover:bg-white transition-all group">
-              {/* Each staff member gets their own unique avatar — real photo if uploaded, otherwise a deterministic colored-initial icon */}
               <UserAvatar
                 avatarUrl={member.avatar_url || null}
                 name={displayName}
@@ -409,6 +476,15 @@ function StaffList({ staff, loading }: { staff: StaffMember[]; loading: boolean 
               </div>
               <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border flex-shrink-0 ${s.bg} ${s.text} ${s.border}`}>{member.role}</span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${member.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{member.status}</span>
+              <button 
+                onClick={() => handleDeleteStaff(member.user_id)}
+                className="ml-2 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                title="Delete User"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
             </div>
           );
         })}

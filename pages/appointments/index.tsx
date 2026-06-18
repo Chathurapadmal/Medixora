@@ -78,6 +78,20 @@ export default function AppointmentsPage() {
   const [statusFilter, setStatus]   = useState("");
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
+  const [userRole, setUserRole]     = useState("Admin");
+  const [userEmail, setUserEmail]   = useState("");
+
+  useEffect(() => {
+    setUserRole(localStorage.getItem("userRole") || "Admin");
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        const decoded = atob(token);
+        const email = decoded.split(":")[2];
+        if (email) setUserEmail(email);
+      } catch (e) {}
+    }
+  }, []);
 
   // ── fetch ──────────────────────────────────────────────────────────
   const fetchAppointments = useCallback(async () => {
@@ -85,14 +99,20 @@ export default function AppointmentsPage() {
       setLoading(true);
       setError("");
 
-      const params = new URLSearchParams({
+      const params: Record<string, string> = {
         search,
         status: statusFilter,
         page: String(page),
         limit: String(LIMIT),
-      });
+      };
 
-      const res = await fetch(`/api/appointments?${params}`);
+      if (userRole === "Doctor" && userEmail) {
+        params.doctorEmail = userEmail;
+      }
+
+      const queryString = new URLSearchParams(params).toString();
+
+      const res = await fetch(`/api/appointments?${queryString}`);
       if (!res.ok) throw new Error("Failed to load appointments");
 
       const json: ApiResponse = await res.json();
@@ -104,7 +124,7 @@ export default function AppointmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, page]);
+  }, [search, statusFilter, page, userRole, userEmail]);
 
   useEffect(() => {
     const timer = setTimeout(fetchAppointments, 300);
@@ -300,22 +320,31 @@ export default function AppointmentsPage() {
                           }
                           className={`inline-flex items-center rounded-full border-0 px-3 py-1 text-[12px] font-medium outline-none cursor-pointer ${style.badge}`}
                         >
-                          {ALL_STATUSES.filter(Boolean).map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
+                          {userRole === "Doctor" ? (
+                            <>
+                              <option value={apt.status}>{apt.status}</option>
+                              {apt.status !== "Confirmed" && <option value="Confirmed">Confirmed</option>}
+                            </>
+                          ) : (
+                            ALL_STATUSES.filter(Boolean).map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))
+                          )}
                         </select>
                       </td>
 
                       {/* ACTIONS */}
                       <td className="px-5 py-4">
-                        <button
-                          onClick={() => handleDelete(apt.appointment_id)}
-                          className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[12px] font-medium text-red-600 hover:bg-red-100 transition"
-                        >
-                          Cancel
-                        </button>
+                        {userRole !== "Doctor" && (
+                          <button
+                            onClick={() => handleDelete(apt.appointment_id)}
+                            className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[12px] font-medium text-red-600 hover:bg-red-100 transition"
+                          >
+                            Cancel
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

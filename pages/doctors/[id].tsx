@@ -32,6 +32,7 @@ type DoctorStatus = "Active" | "On Leave" | "Inactive";
 type DoctorForm = {
   name: string;
   email: string;
+  password?: string;
   phone: string;
   specialization: string;
   qualification: string;
@@ -62,6 +63,7 @@ export default function EditDoctorPage() {
   const [form, setForm] = useState<DoctorForm>({
     name: "",
     email: "",
+    password: "",
     phone: "",
     specialization: "",
     qualification: "",
@@ -218,6 +220,18 @@ export default function EditDoctorPage() {
                       value={form.email}
                       onChange={(e) =>
                         setForm({ ...form, email: e.target.value })
+                      }
+                    />
+                  </Field>
+
+                  <Field label="New Password (optional)">
+                    <input
+                      className={inputClass}
+                      type="password"
+                      placeholder="Leave blank to keep unchanged"
+                      value={form.password || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, password: e.target.value })
                       }
                     />
                   </Field>

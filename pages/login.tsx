@@ -8,7 +8,6 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    role: "",
     email: "",
     password: "",
   });
@@ -52,7 +51,6 @@ export default function LoginPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          role: formData.role || undefined,
         }),
       });
 
@@ -125,21 +123,6 @@ export default function LoginPage() {
                   Login successful! Redirecting...
                 </div>
               )}
-
-              <label className="block">
-                <div className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#5e6472]">Role</div>
-                <div className="relative">
-                  <select name="role" value={formData.role} onChange={handleChange} className="h-12 w-full appearance-none rounded-none border border-[#cfd4e0] bg-white px-3 pr-9 text-[15px] text-[#303646] outline-none focus:border-[#0b56d1]" disabled={loading}>
-                    <option value="">Select your role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Doctor">Doctor</option>
-                    <option value="Nurse">Nurse</option>
-                  </select>
-                  <svg viewBox="0 0 20 20" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#747b8c]" fill="none">
-                    <path d="m5.5 7.8 4.5 4.5 4.5-4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </label>
 
               <label className="block">
                 <div className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#5e6472]">Email address</div>

@@ -15,6 +15,7 @@ type Doctor = {
   availability?: string;
   room?: string;
   consultationFee?: number;
+  status?: string;
 };
 
 type FieldErrors = {
@@ -455,8 +456,13 @@ export default function BookAppointmentPage() {
                 <div className="mt-5 rounded-xl bg-[#f3f4ff] p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-700">Today&apos;s Availability</span>
-                    <span className="rounded-full bg-[#dcfce7] px-2 py-1 text-[11px] font-semibold text-[#16a34a]">
-                      Available
+                    <span className={[
+                      "rounded-full px-2 py-1 text-[11px] font-semibold",
+                      selectedDoctor.status === "Active" || !selectedDoctor.status ? "bg-[#dcfce7] text-[#16a34a]" : 
+                      selectedDoctor.status === "On Leave" ? "bg-amber-100 text-amber-700" :
+                      "bg-red-100 text-red-700"
+                    ].join(" ")}>
+                      {selectedDoctor.status || "Active"}
                     </span>
                   </div>
                   <div className="mt-3 flex items-center gap-2 text-sm text-slate-700">
