@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import {
   SearchIcon,
@@ -29,7 +30,6 @@ type Patient = {
 
 const PAGE_SIZE = 10;
 
-/** Turn a full name into two initials, e.g. "Sarah Jenkins" → "SJ" */
 function initials(name = "") {
   return name
     .split(" ")
@@ -39,7 +39,6 @@ function initials(name = "") {
     .join("");
 }
 
-/** Pick a deterministic avatar colour from the patient id */
 const AVATAR_CLASSES = [
   "bg-blue-100 text-blue-700",
   "bg-purple-100 text-purple-700",
@@ -54,57 +53,60 @@ function avatarClass(id: number) {
 
 function statusBadge(status?: string) {
   switch (status) {
-    case "Active":
-      return "bg-emerald-100 text-emerald-800";
-    case "In Treatment":
-      return "bg-amber-100 text-amber-800";
-    case "Discharged":
-      return "bg-slate-100 text-slate-600";
-    default:
-      return "bg-emerald-100 text-emerald-800";
+    case "Active":       return "bg-emerald-100 text-emerald-800";
+    case "In Treatment": return "bg-amber-100 text-amber-800";
+    case "Discharged":   return "bg-slate-100 text-slate-600";
+    default:             return "bg-emerald-100 text-emerald-800";
   }
 }
 
-/** Capitalise first letter only */
 function capitalise(str = "") {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 export default function PatientDirectoryPage() {
+  const router = useRouter();
+
   const [patients, setPatients]     = useState<Patient[]>([]);
   const [loading, setLoading]       = useState(true);
   const [search, setSearch]         = useState("");
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [page, setPage]             = useState(1);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  useEffect(() => {
-    let mounted = true;
-
+  function loadPatients() {
+    setLoading(true);
     fetch("/api/patients")
       .then((r) => r.json())
-      .then((data) => {
-        if (mounted) setPatients(Array.isArray(data) ? data : []);
-      })
+      .then((data) => setPatients(Array.isArray(data) ? data : []))
       .catch(() => setPatients([]))
-      .finally(() => mounted && setLoading(false));
+      .finally(() => setLoading(false));
+  }
 
-    return () => { mounted = false; };
-  }, []);
+  useEffect(() => { loadPatients(); }, []);
 
-  /* ── filtering ── */
+  async function handleDelete(id: number) {
+    if (!confirm("Are you sure you want to delete this patient?")) return;
+    setDeletingId(id);
+    try {
+      await fetch(`/api/patients/${id}`, { method: "DELETE" });
+      setPatients((prev) => prev.filter((p) => p.id !== id));
+      setOpenMenuId(null);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  /* filtering */
   const filtered = patients.filter((p) => {
     const q = search.toLowerCase();
-    return (
-      !q ||
-      p.name?.toLowerCase().includes(q) ||
-      String(p.id).includes(q)
-    );
+    return !q || p.name?.toLowerCase().includes(q) || String(p.id).includes(q);
   });
 
-  /* ── pagination ── */
-  const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage    = Math.min(page, totalPages);
-  const pageSlice   = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  /* pagination */
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage   = Math.min(page, totalPages);
+  const pageSlice  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const toggleMenu = (id: number) =>
     setOpenMenuId(openMenuId === id ? null : id);
@@ -114,6 +116,14 @@ export default function PatientDirectoryPage() {
       <Head>
         <title>Patients - MediStock</title>
       </Head>
+
+      {/* overlay to close dropdown on outside click */}
+      {openMenuId !== null && (
+        <div
+          className="fixed inset-0 z-20"
+          onClick={() => setOpenMenuId(null)}
+        />
+      )}
 
       <div className="mx-auto w-full max-w-[1440px]">
         <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -196,11 +206,7 @@ export default function PatientDirectoryPage() {
                   </tr>
                 ) : (
                   pageSlice.map((patient) => (
-                    <tr
-                      key={patient.id}
-                      className="transition hover:bg-slate-50"
-                      onClick={() => openMenuId !== null && setOpenMenuId(null)}
-                    >
+                    <tr key={patient.id} className="transition hover:bg-slate-50">
                       <td className="whitespace-nowrap px-4 py-4 font-mono text-xs font-medium text-slate-500">
                         {String(patient.id).padStart(3, "0")}
                       </td>
@@ -256,13 +262,18 @@ export default function PatientDirectoryPage() {
 
                         {openMenuId === patient.id && (
                           <div className="absolute right-6 top-12 z-30 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
+
+                            {/* VIEW → goes to patientdetails */}
                             <button
                               type="button"
+                              onClick={() => router.push(`/patients/${patient.id}`)}
                               className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
                             >
                               <EyeIcon className="h-4 w-4" />
                               View
                             </button>
+
+                            {/* EDIT — wire up later */}
                             <button
                               type="button"
                               className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
@@ -270,12 +281,16 @@ export default function PatientDirectoryPage() {
                               <EditIcon className="h-4 w-4" />
                               Edit
                             </button>
+
+                            {/* DELETE */}
                             <button
                               type="button"
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                              disabled={deletingId === patient.id}
+                              onClick={() => handleDelete(patient.id)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
                             >
                               <DeleteIcon className="h-4 w-4" />
-                              Delete
+                              {deletingId === patient.id ? "Deleting…" : "Delete"}
                             </button>
                           </div>
                         )}
@@ -292,7 +307,10 @@ export default function PatientDirectoryPage() {
             <div>
               {loading
                 ? "Loading…"
-                : `Showing ${filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1} to ${Math.min(safePage * PAGE_SIZE, filtered.length)} of ${filtered.length} entries`}
+                : `Showing ${filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1} to ${Math.min(
+                    safePage * PAGE_SIZE,
+                    filtered.length
+                  )} of ${filtered.length} entries`}
             </div>
 
             <div className="flex items-center gap-1.5">
