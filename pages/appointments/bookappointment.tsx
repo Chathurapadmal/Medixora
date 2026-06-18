@@ -13,6 +13,8 @@ type Doctor = {
   shiftStart?: string;
   shiftEnd?: string;
   availability?: string;
+  room?: string;
+  consultationFee?: number;
 };
 
 type FieldErrors = {
@@ -197,7 +199,7 @@ export default function BookAppointmentPage() {
       }
 
       setSuccess(`Appointment booked! ID: ${(data as any).appointment_number}`);
-      setTimeout(() => router.push("/appointments"), 1500);
+      setTimeout(() => router.push(`/appointments/${(data as any).appointment_id}`), 1500);
     } catch (err: any) {
       setServerError(err.message || "Unexpected error. Please try again.");
     } finally {
@@ -442,6 +444,10 @@ export default function BookAppointmentPage() {
                     <p className="mt-1 text-sm font-medium text-[#2563eb]">
                       {selectedDoctor.specialization || "General Physician"}
                     </p>
+                    <div className="mt-2 text-sm text-slate-600 space-y-1">
+                      <p>Room: <span className="font-medium text-slate-900">{selectedDoctor.room || "TBA"}</span></p>
+                      <p>Fee: <span className="font-medium text-slate-900">Rs {selectedDoctor.consultationFee || "0.00"}</span></p>
+                    </div>
                   </div>
                 </div>
 
