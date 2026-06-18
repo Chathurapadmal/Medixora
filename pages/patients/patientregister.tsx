@@ -48,6 +48,8 @@ export default function PatientRegisterPage() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [saveError, setSaveError]   = useState("");
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const calculateAge = (date: string) => {
     if (!date) return "";
@@ -68,16 +70,43 @@ export default function PatientRegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    setSaveError("");
+    setSaveSuccess(false);
+
+    // Map camelCase form fields → snake_case API fields
+    const payload = {
+      patient_name:      form.name,
+      email:             form.email             || null,
+      phone:             form.phone             || null,
+      date_of_birth:     form.dateOfBirth       || null,
+      gender:            form.gender            || null,
+      address:           form.address           || null,
+      emergency_contact: form.emergencyContact  || null,
+      emergency_phone:   form.emergencyPhone    || null,
+      blood_type:        form.bloodGroup        || null,
+      allergies:         form.allergies         || null,
+    };
 
     try {
-      await fetch("/api/patients", {
+      const res = await fetch("/api/patients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
-      location.href = "/patients";
-    } catch {
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSaveError((data as any).error || "Failed to save patient. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+
+      setSaveSuccess(true);
+      // Redirect after a short delay so the user sees the success message
+      setTimeout(() => { location.href = "/patients"; }, 1200);
+    } catch (err: any) {
+      setSaveError(err.message || "Network error. Please check your connection.");
       setSubmitting(false);
     }
   }
@@ -125,6 +154,25 @@ export default function PatientRegisterPage() {
             </p>
           </div>
         </div>
+
+        {/* ── Save feedback banners ── */}
+        {saveError && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="mt-0.5 h-5 w-5 shrink-0 text-red-500">
+              <path fillRule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd"/>
+            </svg>
+            <p className="text-sm font-medium text-red-700">{saveError}</p>
+          </div>
+        )}
+
+        {saveSuccess && (
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 shrink-0 text-emerald-500">
+              <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd"/>
+            </svg>
+            <p className="text-sm font-medium text-emerald-700">Patient registered successfully! Redirecting…</p>
+          </div>
+        )}
 
         <form className="space-y-6" onSubmit={handleSubmit}>
 

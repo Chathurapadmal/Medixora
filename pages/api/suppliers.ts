@@ -84,7 +84,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(201).json({ message: "Supplier added successfully" });
     }
 
-    res.setHeader("Allow", ["GET", "POST"]);
+    if (req.method === "DELETE") {
+      const id = parseInt(String(req.query.id ?? ""));
+      if (!id || isNaN(id)) {
+        return res.status(400).json({ error: "Valid supplier id is required" });
+      }
+      await pool.request()
+        .input("id", id)
+        .query("DELETE FROM dbo.suppliers WHERE supplier_id = @id");
+      return res.status(200).json({ message: "Supplier deleted successfully" });
+    }
+
+    res.setHeader("Allow", ["GET", "POST", "DELETE"]);
     return res.status(405).end("Method Not Allowed");
   } catch (err: any) {
     console.error("/api/suppliers error", err);

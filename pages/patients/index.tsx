@@ -78,12 +78,39 @@ export default function PatientDirectoryPage() {
     setLoading(true);
     fetch("/api/patients")
       .then((r) => r.json())
-      .then((data) => setPatients(Array.isArray(data) ? data : []))
+      .then((data) => {
+        const rows = Array.isArray(data) ? data : [];
+        // Map DB column names → Patient type fields
+        setPatients(
+          rows.map((p: any) => ({
+            id:               p.patient_id   ?? p.id,
+            name:             p.patient_name ?? p.name,
+            email:            p.email,
+            phone:            p.phone,
+            dateOfBirth:      p.date_of_birth ?? p.dateOfBirth,
+            gender:           p.gender,
+            address:          p.address,
+            emergencyContact: p.emergency_contact ?? p.emergencyContact,
+            emergencyPhone:   p.emergency_phone   ?? p.emergencyPhone,
+            bloodGroup:       p.blood_type  ?? p.bloodGroup,
+            allergies:        p.allergies,
+            status:           p.status,
+          }))
+        );
+      })
       .catch(() => setPatients([]))
       .finally(() => setLoading(false));
   }
 
   useEffect(() => { loadPatients(); }, []);
+
+  // Close menu when clicking anywhere outside
+  useEffect(() => {
+    if (openMenuId === null) return;
+    const handler = () => setOpenMenuId(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [openMenuId]);
 
   async function handleDelete(id: number) {
     if (!confirm("Are you sure you want to delete this patient?")) return;
@@ -108,22 +135,16 @@ export default function PatientDirectoryPage() {
   const safePage   = Math.min(page, totalPages);
   const pageSlice  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const toggleMenu = (id: number) =>
+  const toggleMenu = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     setOpenMenuId(openMenuId === id ? null : id);
+  };
 
   return (
     <>
       <Head>
         <title>Patients - MediStock</title>
       </Head>
-
-      {/* overlay to close dropdown on outside click */}
-      {openMenuId !== null && (
-        <div
-          className="fixed inset-0 z-20"
-          onClick={() => setOpenMenuId(null)}
-        />
-      )}
 
       <div className="mx-auto w-full max-w-[1440px]">
         <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -251,49 +272,46 @@ export default function PatientDirectoryPage() {
                       </td>
 
                       {/* ACTIONS */}
-                      <td className="relative whitespace-nowrap px-4 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); toggleMenu(patient.id); }}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                        >
-                          <span className="text-xl leading-none">⋮</span>
-                        </button>
+                      <td className="whitespace-nowrap px-4 py-4 text-center">
+                        <div className="relative inline-block">
+                          <button
+                            type="button"
+                            onClick={(e) => toggleMenu(patient.id, e)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                          >
+                            <span className="text-xl leading-none">⋮</span>
+                          </button>
 
-                        {openMenuId === patient.id && (
-                          <div className="absolute right-6 top-12 z-30 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-[0_12px_30px_rgba(15,23,42,0.12)]">
-
-                            {/* VIEW → goes to patientdetails */}
-                            <button
-                              type="button"
-                              onClick={() => router.push(`/patients/${patient.id}`)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                          {openMenuId === patient.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute right-0 top-9 z-50 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 text-left shadow-[0_12px_30px_rgba(15,23,42,0.14)]"
                             >
-                              <EyeIcon className="h-4 w-4" />
-                              View
-                            </button>
+                              {/* VIEW */}
+                              <button
+                                type="button"
+                                onClick={() => { setOpenMenuId(null); router.push(`/patients/${patient.id}`); }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                              >
+                                <EyeIcon className="h-4 w-4" />
+                                View
+                              </button>
 
-                            {/* EDIT — wire up later */}
-                            <button
-                              type="button"
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
-                            >
-                              <EditIcon className="h-4 w-4" />
-                              Edit
-                            </button>
+                              <div className="my-0.5 border-t border-slate-100" />
 
-                            {/* DELETE */}
-                            <button
-                              type="button"
-                              disabled={deletingId === patient.id}
-                              onClick={() => handleDelete(patient.id)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-                            >
-                              <DeleteIcon className="h-4 w-4" />
-                              {deletingId === patient.id ? "Deleting…" : "Delete"}
-                            </button>
-                          </div>
-                        )}
+                              {/* DELETE */}
+                              <button
+                                type="button"
+                                disabled={deletingId === patient.id}
+                                onClick={() => { setOpenMenuId(null); handleDelete(patient.id); }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                              >
+                                <DeleteIcon className="h-4 w-4" />
+                                {deletingId === patient.id ? "Deleting…" : "Delete"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
