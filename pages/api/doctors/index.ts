@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getConnection, sql } from "../../../lib/db";
+import bcrypt from "bcryptjs";
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,8 +10,9 @@ export default async function handler(
     const pool = await getConnection();
 
     if (req.method === "GET") {
-      const result = await pool.request().query(
-        `SELECT
+      const { email } = req.query;
+
+      let queryStr = `SELECT
           d.doctor_id AS id,
           d.doctor_name AS name,
           d.email,
@@ -24,9 +26,18 @@ export default async function handler(
           d.shift_end AS shiftEnd,
           d.room,
           d.status
-        FROM doctors d
-        ORDER BY d.doctor_id DESC`
-      );
+        FROM doctors d`;
+
+      const request = pool.request();
+      
+      if (email) {
+        queryStr += ` WHERE d.email = @email`;
+        request.input("email", sql.NVarChar, email);
+      }
+
+      queryStr += ` ORDER BY d.doctor_id DESC`;
+
+      const result = await request.query(queryStr);
 
       return res.status(200).json(result.recordset || []);
     }
@@ -45,6 +56,7 @@ export default async function handler(
         shiftEnd,
         room,
         status,
+        password,
       } = req.body as Record<string, any>;
 
       const availabilityDays = Array.isArray(days) ? days.join(", ") : "";
@@ -100,6 +112,31 @@ export default async function handler(
       `;
 
       const result = await request.query(insertQuery);
+
+      // Interconnect: Auto-create a user account for the doctor if email is provided
+      if (email) {
+        // Hash the provided password, or fallback to a default if not provided
+        const plainPassword = password || "Password@123";
+        const passwordHash = await bcrypt.hash(plainPassword, 10);
+        
+        await pool.request()
+          .input("username", sql.NVarChar, name || "Doctor User")
+          .input("email", sql.NVarChar, email)
+          .input("password_hash", sql.NVarChar, passwordHash)
+          .input("role", sql.NVarChar, "Doctor")
+          .input("status", sql.NVarChar, "active")
+          .query(`
+            IF NOT EXISTS (SELECT 1 FROM dbo.users WHERE email = @email)
+            BEGIN
+              INSERT INTO dbo.users (username, email, password_hash, [role], status)
+              VALUES (@username, @email, @password_hash, @role, @status)
+            END
+            ELSE
+            BEGIN
+              UPDATE dbo.users SET [role] = 'Doctor' WHERE email = @email
+            END
+          `);
+      }
 
       return res.status(201).json({
         insertedId: result.recordset?.[0]?.id ?? null,

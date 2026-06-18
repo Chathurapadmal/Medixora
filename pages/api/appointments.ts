@@ -33,7 +33,7 @@ export default async function handler(
     /*  GET – list all appointments (with optional search & status filter) */
     /* ------------------------------------------------------------------ */
     if (req.method === "GET") {
-      const { search = "", status = "", page = "1", limit = "20" } = req.query;
+      const { search = "", status = "", page = "1", limit = "20", doctorEmail = "" } = req.query;
 
       const pageNum = Math.max(1, parseInt(page as string) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit as string) || 20));
@@ -44,6 +44,7 @@ export default async function handler(
       request.input("status", sql.NVarChar, status as string);
       request.input("offset", sql.Int, offset);
       request.input("limit", sql.Int, limitNum);
+      request.input("doctorEmail", sql.NVarChar, doctorEmail as string);
 
       const result = await request.query(`
         SELECT
@@ -67,6 +68,7 @@ export default async function handler(
             OR p.patient_name LIKE @search
             OR a.appointment_number LIKE @search)
           AND (@status = '' OR a.status = @status)
+          AND (@doctorEmail = '' OR d.email = @doctorEmail)
         ORDER BY a.appointment_id DESC
         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
       `);
@@ -75,15 +77,18 @@ export default async function handler(
       const countReq = pool.request();
       countReq.input("search", sql.NVarChar, `%${search}%`);
       countReq.input("status", sql.NVarChar, status as string);
+      countReq.input("doctorEmail", sql.NVarChar, doctorEmail as string);
       const countResult = await countReq.query(`
         SELECT COUNT(1) AS total
         FROM dbo.appointments a
         LEFT JOIN dbo.patients p ON p.patient_id = a.patient_id
+        LEFT JOIN dbo.doctors d ON d.doctor_id = a.doctor_id
         WHERE
           (@search = '%%'
             OR p.patient_name LIKE @search
             OR a.appointment_number LIKE @search)
           AND (@status = '' OR a.status = @status)
+          AND (@doctorEmail = '' OR d.email = @doctorEmail)
       `);
 
       const total = countResult.recordset[0]?.total ?? 0;
