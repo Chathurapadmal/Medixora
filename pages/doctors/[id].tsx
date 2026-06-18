@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { DoctorsIcon, PlusIcon } from "../../components/dashboard-icons";
 
 function Field({
@@ -53,7 +54,11 @@ const weekDays = [
   { label: "S", value: "Sun" },
 ];
 
-export default function AddDoctorPage() {
+export default function EditDoctorPage() {
+  const router = useRouter();
+  const { id } = router.query;
+  const [loading, setLoading] = useState(true);
+
   const [form, setForm] = useState<DoctorForm>({
     name: "",
     email: "",
@@ -62,12 +67,40 @@ export default function AddDoctorPage() {
     qualification: "",
     experience: 0,
     fee: "",
-    days: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-    shiftStart: "09:00",
-    shiftEnd: "17:00",
+    days: [],
+    shiftStart: "",
+    shiftEnd: "",
     room: "",
     status: "Active",
   });
+
+  useEffect(() => {
+    if (!id) return;
+    
+    fetch(`/api/doctors/${id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Not found");
+        return res.json();
+      })
+      .then((data) => {
+        setForm({
+          name: data.name || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          specialization: data.specialization || "",
+          qualification: data.qualifications || "",
+          experience: data.experience || 0,
+          fee: data.fee || "",
+          days: data.availability ? data.availability.split(", ") : [],
+          shiftStart: data.shiftStart || "",
+          shiftEnd: data.shiftEnd || "",
+          room: data.room || "",
+          status: data.status || "Active",
+        });
+      })
+      .catch((err) => alert(err.message))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const toggleDay = (day: string) => {
     setForm((current) => {
@@ -85,8 +118,8 @@ export default function AddDoctorPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    await fetch("/api/doctors", {
-      method: "POST",
+    await fetch(`/api/doctors/${id}`, {
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
@@ -96,10 +129,14 @@ export default function AddDoctorPage() {
     location.href = "/doctors";
   }
 
+  if (loading) {
+    return <div className="p-10 text-center text-slate-500">Loading profile...</div>;
+  }
+
   return (
     <>
       <Head>
-        <title>Add Doctor - MediStock</title>
+        <title>Edit Doctor - MediStock</title>
       </Head>
 
       <div className="relative mx-auto max-w-6xl space-y-6">
@@ -122,15 +159,15 @@ export default function AddDoctorPage() {
                 Doctors
               </Link>
               <span>/</span>
-              <span>Add Doctor</span>
+              <span>Edit Doctor</span>
             </div>
 
             <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-              New Profile
+              Edit Profile
             </h1>
 
             <p className="mt-2 text-sm text-slate-500">
-              Add doctor information, professional credentials, availability,
+              Update doctor information, professional credentials, availability,
               and profile status.
             </p>
           </div>
@@ -397,7 +434,7 @@ export default function AddDoctorPage() {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
             >
               <PlusIcon className="h-4 w-4" />
-              Save Profile
+              Update Profile
             </button>
           </div>
         </form>

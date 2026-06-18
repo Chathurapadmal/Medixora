@@ -22,6 +22,7 @@ export default async function handler(
           d.availability,
           d.shift_start AS shiftStart,
           d.shift_end AS shiftEnd,
+          d.room,
           d.status
         FROM doctors d
         ORDER BY d.doctor_id DESC`
@@ -42,6 +43,7 @@ export default async function handler(
         days,
         shiftStart,
         shiftEnd,
+        room,
         status,
       } = req.body as Record<string, any>;
 
@@ -59,6 +61,7 @@ export default async function handler(
       request.input("availability", sql.NVarChar, availabilityDays || null);
       request.input("shiftStart", sql.NVarChar, shiftStart || null);
       request.input("shiftEnd", sql.NVarChar, shiftEnd || null);
+      request.input("room", sql.NVarChar, room || null);
       request.input("status", sql.NVarChar, status || "Active");
 
       const insertQuery = `
@@ -74,6 +77,7 @@ export default async function handler(
             availability,
             shift_start,
             shift_end,
+            room,
             status
           )
         VALUES
@@ -88,6 +92,7 @@ export default async function handler(
             @availability,
             @shiftStart,
             @shiftEnd,
+            @room,
             @status
           );
 
