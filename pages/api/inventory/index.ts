@@ -31,12 +31,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             CAST(i.unit_price AS decimal(18,2)) AS price,
             CONVERT(varchar(10), i.expiry_date, 23) AS expiryDate,
             s.supplier_name AS supplier,
-            i.status
+            i.status,
+            CONVERT(varchar(10), i.created_at, 23) AS createdAt
           FROM inventory i
           LEFT JOIN suppliers s ON s.supplier_id = i.supplier_id
           ORDER BY i.medicine_id DESC`
         );
 
+      // Allow the browser to serve a cached response for up to 5s,
+      // and revalidate in the background for up to 30s after that
+      res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=5, stale-while-revalidate=30",
+      );
       return res.status(200).json(result.recordset || []);
     }
 
