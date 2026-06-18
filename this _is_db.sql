@@ -431,3 +431,104 @@ LEFT JOIN dbo.doctors d ON d.doctor_id = inv.doctor_id;
 
 SELECT * FROM dbo.vw_invoices ORDER BY invoice_id DESC;
 
+/* ========================================================================== */
+/* appointments table + view                                                   */
+/* ========================================================================== */
+
+IF OBJECT_ID('dbo.appointments', 'U') IS NULL
+BEGIN
+	CREATE TABLE dbo.appointments (
+		appointment_id     INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+		appointment_number NVARCHAR(40)      NOT NULL CONSTRAINT DF_apt_number     DEFAULT (''),
+		patient_id         INT               NULL,
+		doctor_id          INT               NULL,
+		appointment_date   DATE              NOT NULL,
+		appointment_time   NVARCHAR(10)      NOT NULL,     -- stored as "HH:MM"
+		reason_for_visit   NVARCHAR(MAX)     NULL,
+		status             NVARCHAR(20)      NOT NULL CONSTRAINT DF_apt_status     DEFAULT ('Scheduled'),
+		created_at         DATETIME2         NOT NULL CONSTRAINT DF_apt_created_at DEFAULT SYSUTCDATETIME(),
+		updated_at         DATETIME2         NOT NULL CONSTRAINT DF_apt_updated_at DEFAULT SYSUTCDATETIME()
+	);
+END;
+
+-- FK: appointments -> patients
+IF OBJECT_ID('dbo.patients','U') IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_appointments_patients')
+	ALTER TABLE dbo.appointments
+	ADD CONSTRAINT FK_appointments_patients
+	FOREIGN KEY (patient_id) REFERENCES dbo.patients(patient_id) ON DELETE SET NULL;
+
+-- FK: appointments -> doctors
+IF OBJECT_ID('dbo.doctors','U') IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_appointments_doctors')
+	ALTER TABLE dbo.appointments
+	ADD CONSTRAINT FK_appointments_doctors
+	FOREIGN KEY (doctor_id) REFERENCES dbo.doctors(doctor_id) ON DELETE SET NULL;
+
+-- Indexes for common lookups
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_apt_date'       AND object_id = OBJECT_ID('dbo.appointments'))
+	CREATE INDEX IX_apt_date       ON dbo.appointments(appointment_date);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_apt_patient_id' AND object_id = OBJECT_ID('dbo.appointments'))
+	CREATE INDEX IX_apt_patient_id ON dbo.appointments(patient_id);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_apt_doctor_id'  AND object_id = OBJECT_ID('dbo.appointments'))
+	CREATE INDEX IX_apt_doctor_id  ON dbo.appointments(doctor_id);
+
+/* -------------------------------------------------------------------------- */
+/* vw_appointments – joined view used by the list page                        */
+/* -------------------------------------------------------------------------- */
+
+EXEC(N'
+CREATE OR ALTER VIEW dbo.vw_appointments
+AS
+SELECT
+	a.appointment_id,
+	a.appointment_number,
+	a.patient_id,
+	ISNULL(p.patient_name, ''Unknown Patient'') AS patient_name,
+	a.doctor_id,
+	ISNULL(d.doctor_name,  ''Unknown Doctor'')  AS doctor_name,
+	ISNULL(d.specialization, '''')              AS specialization,
+	ISNULL(d.shift_start, '''')                 AS shift_start,
+	ISNULL(d.shift_end,   '''')                 AS shift_end,
+	a.appointment_date,
+	a.appointment_time,
+	ISNULL(a.reason_for_visit, '''')            AS reason_for_visit,
+	a.status,
+	a.created_at,
+	a.updated_at
+FROM dbo.appointments a
+LEFT JOIN dbo.patients p ON p.patient_id = a.patient_id
+LEFT JOIN dbo.doctors  d ON d.doctor_id  = a.doctor_id;
+');
+
+/* -------------------------------------------------------------------------- */
+/* Sample read queries                                                         */
+/* -------------------------------------------------------------------------- */
+
+-- All appointments (newest first)
+SELECT * FROM dbo.vw_appointments ORDER BY appointment_id DESC;
+
+-- Today's appointments
+SELECT * FROM dbo.vw_appointments
+WHERE appointment_date = CAST(GETDATE() AS date)
+ORDER BY appointment_time;
+
+-- Pending / Scheduled appointments
+SELECT * FROM dbo.vw_appointments
+WHERE status IN ('Pending', 'Scheduled')
+ORDER BY appointment_date, appointment_time;
+
+/* -------------------------------------------------------------------------- */
+/* Sample INSERT rows (run in SSMS to seed test data)                         */
+/* -------------------------------------------------------------------------- */
+
+/*
+INSERT INTO dbo.appointments
+  (appointment_number, patient_id, doctor_id, appointment_date, appointment_time, reason_for_visit, status)
+VALUES
+  ('APT-20260618-0001', 1, 1, '2026-06-20', '10:30', 'Annual check-up',          'Scheduled'),
+  ('APT-20260618-0002', 2, 2, '2026-06-21', '14:00', 'Follow-up post-surgery',   'Confirmed'),
+  ('APT-20260618-0003', 3, 1, '2026-06-18', '09:00', 'MRI Scan Review',          'Pending');
+*/
