@@ -198,7 +198,7 @@ function EditDoctorPanel({
   });
 
   useEffect(() => {
-    fetch(`/api/doctors/${doctorId}`)
+    fetch(`/api/doctors?id=${doctorId}`)
       .then((res) => {
         if (!res.ok) throw new Error("Not found");
         return res.json();
@@ -240,7 +240,7 @@ function EditDoctorPanel({
     setSaving(true);
 
     try {
-      await fetch(`/api/doctors/${doctorId}`, {
+      await fetch(`/api/doctors?id=${doctorId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -608,7 +608,7 @@ export default function DoctorsPage() {
 
   const handleDelete = useCallback(async (id: string) => {
     try {
-      const res = await fetch(`/api/doctors/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/doctors?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete doctor");
       setDoctors((prev) => prev.filter((d) => d.id !== id));
     } catch (err: any) {
