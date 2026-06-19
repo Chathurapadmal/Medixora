@@ -73,6 +73,10 @@ export default function PatientDirectoryPage() {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [page, setPage]             = useState(1);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterGender, setFilterGender] = useState("");
+  const [filterBloodGroup, setFilterBloodGroup] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
 
   function loadPatients() {
     setLoading(true);
@@ -127,7 +131,11 @@ export default function PatientDirectoryPage() {
   /* filtering */
   const filtered = patients.filter((p) => {
     const q = search.toLowerCase();
-    return !q || p.name?.toLowerCase().includes(q) || String(p.id).includes(q);
+     const searchMatch = !q || p.name?.toLowerCase().includes(q) || String(p.id).includes(q);
+     const genderMatch = !filterGender || p.gender?.toLowerCase() === filterGender.toLowerCase();
+     const bloodGroupMatch = !filterBloodGroup || p.bloodGroup === filterBloodGroup;
+     const statusMatch = !filterStatus || p.status === filterStatus;
+     return searchMatch && genderMatch && bloodGroupMatch && statusMatch;
   });
 
   /* pagination */
