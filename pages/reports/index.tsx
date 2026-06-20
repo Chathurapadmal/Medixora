@@ -11,7 +11,7 @@ const revenueExpensesData = [
 ];
 
 function formatLkr(value: number) {
-  return `LKR ${new Intl.NumberFormat("en-LK", {
+  return `Rs. ${new Intl.NumberFormat("en-LK", {
     maximumFractionDigits: 0,
   }).format(value)}`;
 }
@@ -22,7 +22,7 @@ function formatCompactLkr(value: number) {
     maximumFractionDigits: value >= 1000000 ? 1 : 0,
   }).format(value);
 
-  return `LKR ${formatted}`;
+  return `Rs. ${formatted}`;
 }
 
 function RevenueExpenseChart() {
@@ -47,7 +47,7 @@ function RevenueExpenseChart() {
       <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-gray-500">
         <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-blue-600" />Revenue</span>
         <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-orange-400" />Expenses</span>
-        <span className="ml-auto text-gray-400">Values shown in LKR</span>
+        <span className="ml-auto text-gray-400">Values shown in Rs.</span>
       </div>
 
       <div className="relative flex-1 overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-b from-white to-slate-50/80">
