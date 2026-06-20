@@ -138,7 +138,7 @@ export default function LoginPage() {
               <label>
                 <div className="mb-2 flex items-center justify-between text-[13px] font-semibold uppercase tracking-[0.08em] text-[#5e6472]">
                   <span>Password</span>
-                  <a href="#" className="text-[13px] font-semibold normal-case tracking-normal text-[#0b56d1]">Forgot Password?</a>
+                  <Link href="/forgot-password" className="text-[13px] font-semibold normal-case tracking-normal text-[#0b56d1]">Forgot Password?</Link>
                 </div>
                 <div className="relative">
                   <svg viewBox="0 0 24 24" fill="none" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7a8091]">

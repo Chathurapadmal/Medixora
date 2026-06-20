@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { BellIcon, HelpIcon, SearchIcon } from "./dashboard-icons";
 import UserAvatar from "@/components/UserAvatar";
 
@@ -85,7 +86,7 @@ export default function Topbar() {
         <div className="hidden h-8 w-px bg-slate-300 sm:block" />
 
         {/* ── User pill ── */}
-        <div className="flex items-center gap-3 pl-1 sm:pl-2">
+        <Link href="/settings" className="flex items-center gap-3 pl-1 sm:pl-2 rounded-lg transition hover:bg-slate-100 -m-1 p-1">
           {/*
             UserAvatar picks: real photo → initials (unique color per userId) → role gradient.
             The color is deterministic, so the same user always shows the same colored avatar.
@@ -105,7 +106,7 @@ export default function Topbar() {
             </div>
             <div className="text-[12px] leading-tight text-slate-500">{user.role}</div>
           </div>
-        </div>
+        </Link>
 
       </div>
     </header>
