@@ -1,7 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -48,28 +48,40 @@ function MedicineSearch({
   onAdd: (m: Medicine) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [categoryFilter, setCategoryFilter] = useState("All Categories");
+  const [stockFilter, setStockFilter] = useState<"All" | "Low" | "Normal">("All");
 
-  const results = query.trim()
-    ? medicines.filter(
-        (m) =>
-          m.name.toLowerCase().includes(query.toLowerCase()) ||
-          m.code.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 8)
-    : [];
+  const normalizedQuery = query.trim().toLowerCase();
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  const categoryOptions = [
+    "All Categories",
+    ...Array.from(new Set(medicines.map((m) => m.category?.trim()).filter(Boolean) as string[])).sort(),
+  ];
+
+  const results = medicines
+    .filter((m) => {
+      const queryMatch =
+        !normalizedQuery ||
+        m.name.toLowerCase().includes(normalizedQuery) ||
+        m.code.toLowerCase().includes(normalizedQuery);
+
+      const categoryMatch =
+        categoryFilter === "All Categories" ||
+        (m.category || "Uncategorized") === categoryFilter;
+
+      const stockMatch =
+        stockFilter === "All"
+          ? true
+          : stockFilter === "Low"
+          ? m.stock > 0 && m.stock < 10
+          : m.stock >= 10;
+
+      return queryMatch && categoryMatch && stockMatch;
+    })
+    .slice(0, 24);
 
   return (
-    <div ref={ref} className="relative">
+    <div className="space-y-3">
       <div className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20">
         <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4 shrink-0 text-slate-400">
           <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" fill="currentColor" />
@@ -77,14 +89,13 @@ function MedicineSearch({
         <input
           type="text"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Search medicine name or code…"
           className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
           autoComplete="off"
         />
         {query && (
-          <button onClick={() => { setQuery(""); setOpen(false); }} className="text-slate-400 hover:text-slate-600">
+          <button type="button" onClick={() => setQuery("")} className="text-slate-400 hover:text-slate-600">
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
               <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
             </svg>
@@ -92,39 +103,70 @@ function MedicineSearch({
         )}
       </div>
 
-      {open && results.length > 0 && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
-          {results.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => {
-                onAdd(m);
-                setQuery("");
-                setOpen(false);
-              }}
-              className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-blue-50"
-            >
-              <div>
-                <p className="text-sm font-semibold text-slate-900">{m.name}</p>
-                <p className="text-xs text-slate-500">{m.code} · {m.category}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-blue-700">{fmtRs(m.price)}</p>
-                <p className={`text-xs ${m.stock < 10 ? "text-red-500 font-medium" : "text-slate-400"}`}>
-                  {m.stock} in stock
-                </p>
-              </div>
-            </button>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+        >
+          {categoryOptions.map((opt) => (
+            <option key={opt} value={opt}>{opt}</option>
           ))}
-        </div>
-      )}
+        </select>
 
-      {open && query.trim() && results.length === 0 && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1.5 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-xl">
-          <p className="text-sm text-slate-400">No medicines found for "{query}"</p>
+        <select
+          value={stockFilter}
+          onChange={(e) => setStockFilter(e.target.value as "All" | "Low" | "Normal")}
+          className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+        >
+          <option value="All">All Stock Levels</option>
+          <option value="Low">Low Stock (&lt; 10)</option>
+          <option value="Normal">In Stock (10+)</option>
+        </select>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white">
+        <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Medicine List</p>
+          <p className="text-xs text-slate-400">{results.length} result{results.length !== 1 ? "s" : ""}</p>
         </div>
-      )}
+
+        {results.length > 0 ? (
+          <div className="max-h-72 overflow-y-auto">
+            {results.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => {
+                  onAdd(m);
+                  setQuery("");
+                }}
+                className="flex w-full items-center justify-between border-b border-slate-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-blue-50"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{m.name}</p>
+                  <p className="text-xs text-slate-500">{m.code} · {m.category || "Uncategorized"}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-blue-700">{fmtRs(m.price)}</p>
+                  <p className={`text-xs ${m.stock < 10 ? "text-red-500 font-medium" : "text-slate-400"}`}>
+                    {m.stock} in stock
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 py-6 text-center">
+            <p className="text-sm text-slate-500">No medicines match current filters.</p>
+            <p className="mt-1 text-xs text-slate-400">Try changing search text, category, or stock level.</p>
+          </div>
+        )}
+
+        <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
+          <p className="text-xs text-slate-500">Tip: Click any medicine row to add it to the invoice.</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -610,7 +652,7 @@ export default function NewInvoicePage() {
               {/* Inventory note */}
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
                 <p className="text-xs font-medium text-amber-800">
-                  📦 Inventory will be updated automatically when the invoice is created. Stock levels are reduced for each medicine added.
+                   Inventory will be updated automatically when the invoice is created. Stock levels are reduced for each medicine added.
                 </p>
               </div>
 
