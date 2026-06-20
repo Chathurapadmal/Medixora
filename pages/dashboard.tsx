@@ -284,6 +284,30 @@ export default function Home() {
     };
   }, [user?.role, user?.email]);
 
+  const updateDoctorStatus = async (nextStatus: string) => {
+    if (!doctorProfile?.id) return;
+
+    const previousStatus = doctorProfile.status;
+    setDoctorProfile((current: any) => (current ? { ...current, status: nextStatus } : current));
+
+    try {
+      const response = await fetch(`/api/doctors?id=${doctorProfile.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update doctor status");
+      }
+    } catch (error) {
+      setDoctorProfile((current: any) => (current ? { ...current, status: previousStatus } : current));
+      console.error("Failed to update doctor status:", error);
+    }
+  };
+
   const adminStats = useMemo(() => {
     const summary = dashboard?.summary;
     const totalMedicines = summary?.totalMedicines ?? 0;
