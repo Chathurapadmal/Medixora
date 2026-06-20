@@ -62,7 +62,27 @@ export default function InvoiceDetailsPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      document.body.classList.add("billing-invoice-print");
+    };
+
+    const handleAfterPrint = () => {
+      document.body.classList.remove("billing-invoice-print");
+    };
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+      document.body.classList.remove("billing-invoice-print");
+    };
+  }, []);
+
   const handlePrint = () => {
+    document.body.classList.add("billing-invoice-print");
     window.print();
   };
 
@@ -89,7 +109,7 @@ export default function InvoiceDetailsPage() {
         <title>{invoice.invoice_number} – Medixora</title>
       </Head>
 
-      <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 print:m-0 print:max-w-none print:p-0">
+      <div className="mx-auto max-w-4xl space-y-6 px-4 py-6 print:m-0 print:max-w-none print:p-0 billing-invoice-print-area">
 
         {/* ── Actions (hidden on print) ── */}
         <div className="flex items-center justify-between print:hidden">
@@ -114,7 +134,7 @@ export default function InvoiceDetailsPage() {
         </div>
 
         {/* ── Invoice Document ── */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm print:border-none print:shadow-none print:p-0">
+        <div className="billing-invoice-print-area rounded-2xl border border-slate-200 bg-white p-8 shadow-sm print:border-none print:shadow-none print:p-0">
           
           {/* Header */}
           <div className="flex flex-col-reverse gap-6 sm:flex-row sm:justify-between pb-8 border-b border-slate-100 print:border-slate-300">
@@ -246,10 +266,42 @@ export default function InvoiceDetailsPage() {
       {/* Global Print Styles to ensure background colors print if needed, and hide layout */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          body {
+          body.billing-invoice-print {
             background-color: white !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+          }
+          body.billing-invoice-print * {
+            visibility: hidden;
+          }
+          body.billing-invoice-print .billing-invoice-print-area,
+          body.billing-invoice-print .billing-invoice-print-area * {
+            visibility: visible;
+          }
+          body.billing-invoice-print > #__next > div {
+            display: block !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          body.billing-invoice-print > #__next > div > aside {
+            display: none !important;
+          }
+          body.billing-invoice-print > #__next > div > div > header {
+            display: none !important;
+          }
+          body.billing-invoice-print > #__next > div > div {
+            min-height: 0 !important;
+            overflow: visible !important;
+          }
+          body.billing-invoice-print main {
+            overflow: visible !important;
+            padding: 0 !important;
+          }
+          body.billing-invoice-print .billing-invoice-print-area {
+            position: relative;
+            inset: auto;
+            margin: 0;
+            width: 100%;
           }
           @page {
             margin: 1.5cm;
